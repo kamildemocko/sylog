@@ -4,6 +4,7 @@ from nicegui import ui
 
 import symhistory
 import symlog
+import symmanager
 import store
 
 DB = store.SqliteDB()
@@ -24,6 +25,9 @@ def header_and_footer():
             ).classes("ml-auto")
         yield
 
+    ui.separator().classes("my-6")
+    ui.markdown("2026 **SyLog**").classes("w-full text-center")
+
 
 @ui.page("/")
 def index():
@@ -32,15 +36,13 @@ def index():
             symlog.content(DB, on_saved=symhistory.content.refresh)
             ui.separator().classes("my-6")
             symhistory.content(DB)
-            ui.separator().classes("my-6")
-            ui.markdown("2026 **SyLog**").classes("w-full text-center")
 
 
 @ui.page("/manage-symptoms")
 def manage_symptoms():
     with header_and_footer():
         with ui.column().classes("w-full max-w-2xl mx-auto"):
-            ui.label("here")
+            symmanager.content(DB)
 
 
 ui.run(title="Symptom Logger")
