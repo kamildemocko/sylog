@@ -129,7 +129,7 @@ class SqliteDB:
             raise ConnectionNotOpened
 
         query = """
-        INSERT INTO log_items (ts, symptom, severity, symptom_type, description) VALUES (?, ?, ?, ?, ?);
+        INSERT INTO log_items (ts, symptom, symptom_type, severity, description) VALUES (?, ?, ?, ?, ?);
         """
 
         self.conn.execute(query, (
@@ -140,3 +140,17 @@ class SqliteDB:
             item.description,
         ))
         self.conn.commit()
+
+    def select_items(self, count: int = 20) -> list[QueryItem]:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        SELECT ts, symptom, symptom_type, severity, description
+        FROM log_items
+        ORDER BY id DESC
+        LIMIT ?;
+        """
+
+        selected = self.conn.execute(query, (count,)).fetchmany(count)
+        return [QueryItem(*s) for s in selected]

@@ -47,6 +47,8 @@ def content(db: store.SqliteDB):
         db.insert_an_item(data)
 
         reset_form()
+        # TODO refresh history
+
         ui.notify("Saved")
 
     ui.markdown("## Log Symptom").classes("w-full text-center")
