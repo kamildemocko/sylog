@@ -14,8 +14,8 @@ def index():
     # TODO symptoms adder
 
     with ui.column().classes("w-full max-w-2xl mx-auto"):
-        symlog.content(DB)
+        symlog.content(DB, on_saved=symhistory.content.refresh)
         ui.separator().classes("my-6")
         symhistory.content(DB)
 
-ui.run()
+ui.run(title="Symptom Logger")

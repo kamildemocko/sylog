@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from nicegui import ui
 
 import models
@@ -8,7 +10,7 @@ SYMPTOMS_INP_VALUES = ["S", "C"]
 SEVERITIES = ["LOW", "MEDIUM", "HIGH"]
 
 
-def content(db: store.SqliteDB):
+def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
     def reset_form() -> None:
         d, t = utils.get_date_and_time()
         date_input.value = d
@@ -47,7 +49,8 @@ def content(db: store.SqliteDB):
         db.insert_an_item(data)
 
         reset_form()
-        # TODO refresh history
+        if on_saved:
+            on_saved()
 
         ui.notify("Saved")
 
