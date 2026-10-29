@@ -5,9 +5,10 @@ import utils
 
 
 def content():
-    example_data = models.DatabaseHistoryItem(
+    example_data = models.QueryItem(
         timestamp="2026-10-28T20:08:00+0100",
         symptom="bloating",
+        symptom_type="standard",
         severity="MEDIUM",
         description="yeah man",
     )

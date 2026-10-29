@@ -4,18 +4,10 @@ import arrow
 
 
 @dataclass
-class SavedData:
-    date: str
-    time: str
-    symptom: str
-    severity: str
-    description: str | None
-
-
-@dataclass
-class DatabaseHistoryItem:
+class QueryItem:
     timestamp: str
     symptom: str
+    symptom_type: str
     severity: str
     description: str | None
 

@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 import arrow
 
 
@@ -18,6 +20,12 @@ def validate_date_or_time(value: str) -> bool:
             return False
 
     return is_parseable(value) or is_parseable(f"2000-01-01T{value}")
+
+
+def create_timestampt_utc(date: str, time: str) -> str:
+    parsed = arrow.get(f"{date}T{time}").replace(tzinfo="local")
+    utc = parsed.to("utc")
+    return utc.isoformat(sep=" ")
 
 
 def knob_value_from_severity(severity: str) -> int:
