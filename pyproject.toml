@@ -1,0 +1,13 @@
+[project]
+name = "sylog"
+version = "1.0.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Kamil Democko", email = "kamil.democko@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "arrow>=1.4.0",
+    "nicegui>=3.18.0",
+]
