@@ -3,12 +3,18 @@ from nicegui import ui
 import store
 import utils
 
+page_size = 10
+
 
 @ui.refreshable
 def content(db: store.SqliteDB):
-    # TODO add history max results toggle
+    def set_page_size(e):
+        global page_size
 
-    saved_items = db.select_items(10)
+        page_size = e.value
+        content.refresh()
+
+    saved_items = db.select_items(page_size)
 
     ui.markdown("## History").classes("w-full text-center")
 
@@ -20,3 +26,5 @@ def content(db: store.SqliteDB):
             ui.markdown(f"{item.description}").classes("flex-1 min-w-0")
             ui.separator().classes("mx-4").props("vertical")
             ui.markdown(f"_{item.human_timestamp()}_").classes("w-25 text-right")
+
+    page_select = ui.select([1, 2, 10, 25, 50, 100], value=page_size, label="History items", on_change=set_page_size).classes("w-28")

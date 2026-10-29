@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 
 from nicegui import ui
-from nicegui.functions.navigate import navigate
 
 import symhistory
 import symlog
