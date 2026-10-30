@@ -25,11 +25,17 @@ def content(db: store.SqliteDB) -> None:
         export_file = export_dir.joinpath(f"{ts}_export.csv")
 
         with export_file.open("w", encoding="utf-8", newline="") as file:
-            writer = csv.DictWriter(file, [f.name for f in fields(HistoryItem)], delimiter=",")
+            writer = csv.DictWriter(
+                file,
+                [f.name for f in fields(HistoryItem)],
+                delimiter=","
+            )
             writer.writeheader()
             writer.writerows(asdict(i) for i in all_items)
 
+        ui.download.file(export_file)
+
 
     with ui.column().classes("w-full"):
-        ui.select([10, 25, 50, 100, "ALL"], value=10, label="Number of exported values").classes("w-full")
+        ui.select([10, 25, 50, 100, "ALL"], value=100, label="Number of exported values").classes("w-full")
         ui.button("Export CSV", on_click=export_csv).classes("w-full")

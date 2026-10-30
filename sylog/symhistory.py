@@ -42,7 +42,7 @@ def content(db: store.SqliteDB) -> None:
             ui.markdown(f"**{item.symptom.title()}**\n\n_{item.human_timestamp()}_").classes("w-32")
             severity_bar(utils.knob_value_from_severity(item.severity))
             ui.markdown(f"{item.description if item.description else 'No context'}").classes("flex-1 min-w-0")
-            ui.button(icon="delete", on_click=lambda uid=item.id: remove_item(uid)).classes("w-8").props("color=red")
+            ui.button(icon="delete", on_click=lambda _, uid=item.id: remove_item(uid)).classes("w-8").props("color=red")
 
     with ui.column().classes("w-full"):
         (
