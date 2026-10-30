@@ -37,7 +37,7 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
 
         data = models.QueryItem(
             timestamp=utils.create_timestampt_utc(date_input.value, time_input.value),
-            symptom=symptom_select.value,
+            symptom=symptom_select.value.lower(),
             severity=severity.value,
             description=desc.value if desc.value else None,
         )

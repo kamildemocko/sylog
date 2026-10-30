@@ -12,7 +12,7 @@ def content(db: store.SqliteDB):
         if not value:
             return
 
-        db.insert_a_symptom(value)
+        db.insert_a_symptom(value.strip())
         ui.notify(f"Symbol {value} added")
         content.refresh()
 

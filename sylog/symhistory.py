@@ -3,7 +3,8 @@ from nicegui import ui
 import store
 import utils
 
-_page_size = 10
+_page_size: int = 10
+_active_filter: str | None = None
 
 
 def severity_bar(value: int, max_value: int = 3):
@@ -17,7 +18,7 @@ def severity_bar(value: int, max_value: int = 3):
 
 @ui.refreshable
 def content(db: store.SqliteDB) -> None:
-    def set_page_size(e):
+    def set_page_size(e) -> None:
         global _page_size
 
         _page_size = e.value
@@ -29,12 +30,36 @@ def content(db: store.SqliteDB) -> None:
         ui.notify("Item removed")
         content.refresh()
 
-    saved_items = db.select_items(_page_size)
+    def set_filter(e) -> None:
+        global _active_filter
+
+        _active_filter = e.value.lower()
+        ui.notify(f"History filter set to {_active_filter}")
+        content.refresh()
+
+    def show_controls() -> None:
+        with ui.row().classes("w-full"):
+            (
+                ui
+                .select(all_symptoms, label="Filter symptom", on_change=set_filter, clearable=True)
+                .classes("w-38")
+            )
+            (
+                ui
+                .select([10, 25, 50, 100], value=_page_size, label="History items", on_change=set_page_size)
+                .classes("w-28")
+                .classes("ml-auto")
+            )
+
+    saved_items = db.select_items(_page_size, _active_filter)
+    all_symptoms = db.select_all_symptoms()
+    all_symptoms = sorted([s.title() for s in all_symptoms])
 
     ui.markdown("## History").classes("w-full text-center")
 
     if len(saved_items) == 0:
         ui.label("There are no logged items yet, add one?").classes("w-full text-center")
+        show_controls()
         return
 
     for item in saved_items:
@@ -44,10 +69,4 @@ def content(db: store.SqliteDB) -> None:
             ui.markdown(f"{item.description if item.description else 'No context'}").classes("flex-1 min-w-0")
             ui.button(icon="delete", on_click=lambda _, uid=item.id: remove_item(uid)).classes("w-8").props("color=red")
 
-    with ui.column().classes("w-full"):
-        (
-            ui.
-            select([10, 25, 50, 100], value=_page_size, label="History items", on_change=set_page_size)
-            .classes("w-28")
-            .classes("ml-auto")
-        )
+    show_controls()

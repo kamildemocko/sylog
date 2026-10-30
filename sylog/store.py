@@ -65,6 +65,10 @@ class SqliteDB:
         );
         """
 
+        table_log_items_index_query = """
+        CREATE INDEX idx_log_items_symptom ON log_items(symptom);
+        """
+
         table_symptoms_in_query = """
         INSERT INTO symptoms (name) VALUES (?);
         """
@@ -89,6 +93,7 @@ class SqliteDB:
         self.conn.executemany(table_symptoms_in_query, default_symptoms)
         self.conn.commit()
         self.conn.execute(table_log_items_query)
+        self.conn.execute(table_log_items_index_query)
 
     def select_all_symptoms(self) -> list[str]:
         if not self.conn:
@@ -139,21 +144,33 @@ class SqliteDB:
         ))
         self.conn.commit()
 
-    def select_items(self, count: int | None = 20) -> list[HistoryItem]:
+    def select_items(self, count: int | None = 20, symptom_filter_value: str | None = None) -> list[HistoryItem]:
         if not self.conn:
             raise ConnectionNotOpened
 
         if count is None:
             count = -1
 
-        query = """
+        query_all = """
         SELECT id, ts, symptom, severity, description
         FROM log_items
         ORDER BY id DESC
         LIMIT ?;
         """
 
-        selected = self.conn.execute(query, (count,)).fetchmany(count)
+        query_w_filter = """
+        SELECT id, ts, symptom, severity, description
+        FROM log_items
+        WHERE symptom = ?
+        ORDER BY id DESC
+        LIMIT ?;
+        """
+
+        if symptom_filter_value:
+            selected = self.conn.execute(query_w_filter, (symptom_filter_value, count)).fetchmany(count)
+        else:
+            selected = self.conn.execute(query_all, (count,)).fetchmany(count)
+
         return [HistoryItem(*s) for s in selected]
 
     def remove_an_item(self, uid: int) -> None:
