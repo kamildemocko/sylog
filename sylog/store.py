@@ -167,9 +167,9 @@ class SqliteDB:
         """
 
         if symptom_filter_value:
-            selected = self.conn.execute(query_w_filter, (symptom_filter_value, count)).fetchmany(count)
+            selected = self.conn.execute(query_w_filter, (symptom_filter_value, count)).fetchall()
         else:
-            selected = self.conn.execute(query_all, (count,)).fetchmany(count)
+            selected = self.conn.execute(query_all, (count,)).fetchall()
 
         return [HistoryItem(*s) for s in selected]
 

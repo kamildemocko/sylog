@@ -12,7 +12,8 @@ from models import HistoryItem
 
 def content(db: store.SqliteDB) -> None:
     def export_csv() -> None:
-        all_items = db.select_items(count=None)
+        limit_count = None if limit.value == "ALL" else limit.value
+        all_items = db.select_items(count=limit_count)
         if len(all_items) == 0:
             ui.notify("No items to export")
             return
@@ -42,5 +43,5 @@ def content(db: store.SqliteDB) -> None:
     ui.markdown("## CSV Export").classes("w-full text-center")
 
     with ui.column().classes("w-full"):
-        ui.select([10, 25, 50, 100, 500, 1000, "ALL"], value=100, label="Number of exported values").classes("w-full")
+        limit = ui.select([10, 25, 50, 100, 500, 1000, "ALL"], value=100, label="Number of exported values").classes("w-full")
         ui.button("Export CSV", on_click=export_csv).classes("w-full")
