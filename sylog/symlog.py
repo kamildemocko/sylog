@@ -82,6 +82,6 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
         .classes("w-full")
         .props("spread")
     )
-    desc = ui.textarea(placeholder="Description").classes("w-full")
+    desc = ui.textarea(placeholder="Context").classes("w-full")
 
     ui.button("Save", on_click=save).classes("w-full")
