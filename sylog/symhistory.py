@@ -1,19 +1,9 @@
 from nicegui import ui
 
 import store
-import utils
 
 _page_size: int = 10
 _active_filter: str | None = None
-
-
-def severity_bar(value: int, max_value: int = 3):
-    colors = ["bg-green-400", "bg-yellow-400", "bg-red-500"]
-    pct = value / max_value * 100
-
-    with ui.element("div").classes("w-2 h-10 bg-gray-20 rounded flex items-end"):
-        color = colors[min(value, 3) - 1] if value else ""
-        ui.element("div").classes(f"w-full rounded {color}").style(f"height: {pct}%")
 
 
 @ui.refreshable
@@ -71,10 +61,21 @@ def content(db: store.SqliteDB) -> None:
         return
 
     for item in saved_items:
-        with ui.row().classes("w-full flex-nowrap items-center"):
-            ui.markdown(f"**{item.symptom.title()}**\n\n_{item.human_timestamp()}_").classes("w-32")
-            severity_bar(utils.knob_value_from_severity(item.severity))
-            ui.markdown(f"{item.description if item.description else 'No context'}").classes("flex-1 min-w-0")
-            ui.button(icon="delete", on_click=lambda _, uid=item.id: remove_item(uid)).classes("w-8").props("color=red")
+        with ui.column().classes("w-full gap-0"):
+            with ui.row().classes("w-full items-center flex-nowrap"):
+                ui.markdown(f"**{item.symptom.title()}**")
+                stars = 3 if item.severity == "HIGH" else 2 if item.severity == "MEDIUM" else 1
+                ui.rating(max=3, icon="circle", value=stars).classes("flex-1 min-w-12")
+                ui.markdown(f"_{item.human_timestamp()}_").classes("ml-auto")
+
+                ui.button(
+                    icon="delete",
+                    on_click=lambda _, uid=item.id: remove_item(uid),
+                ).classes("w-8").props("color=red")
+
+            with ui.row().classes("w-full items-center"):
+                ui.markdown(f"Context: {item.description or 'No context'}")
+
+            ui.separator()
 
     show_controls()
