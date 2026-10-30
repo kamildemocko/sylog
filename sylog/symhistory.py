@@ -33,7 +33,8 @@ def content(db: store.SqliteDB) -> None:
     def set_filter(e) -> None:
         global _active_filter
 
-        _active_filter = e.value.lower()
+        _active_filter = e.value if e.value else None
+
         ui.notify(f"History filter set to {_active_filter}")
         content.refresh()
 
@@ -41,7 +42,12 @@ def content(db: store.SqliteDB) -> None:
         with ui.row().classes("w-full"):
             (
                 ui
-                .select(all_symptoms, label="Filter symptom", on_change=set_filter, clearable=True)
+                .select(
+                    all_symptoms,
+                    value=_active_filter.title() if _active_filter else None,
+                    label="Filter symptom",
+                    on_change=set_filter,
+                    clearable=True)
                 .classes("w-38")
             )
             (
@@ -51,7 +57,10 @@ def content(db: store.SqliteDB) -> None:
                 .classes("ml-auto")
             )
 
-    saved_items = db.select_items(_page_size, _active_filter)
+    saved_items = db.select_items(
+        _page_size,
+        _active_filter.lower() if _active_filter else None
+    )
     all_symptoms = db.select_all_symptoms()
     all_symptoms = sorted([s.title() for s in all_symptoms])
 

@@ -21,8 +21,8 @@ def content(db: store.SqliteDB) -> None:
 
         ui.notify("Exporting CSV")
 
-        ts = arrow.now().format("YYYY-MM-DD")
-        export_file = export_dir.joinpath(f"{ts}_export.csv")
+        ts = arrow.now().format("YYYY-MM-DDTHH-mm")
+        export_file = export_dir.joinpath(f"{ts}_sylog_export.csv")
 
         with export_file.open("w", encoding="utf-8", newline="") as file:
             writer = csv.DictWriter(
