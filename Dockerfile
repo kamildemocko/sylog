@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY uv.lock README.md pyproject.toml LICENCE .python-version /app/
+COPY uv.lock README.md pyproject.toml LICENSE .python-version /app/
 
 COPY sylog/ /app/sylog/
 
