@@ -39,7 +39,7 @@ def content(db: store.SqliteDB) -> None:
         content.refresh()
 
     def show_controls() -> None:
-        with ui.row().classes("w-full"):
+        with ui.row().classes("w-full flex-nowrap"):
             (
                 ui
                 .select(
@@ -48,13 +48,12 @@ def content(db: store.SqliteDB) -> None:
                     label="Filter symptom",
                     on_change=set_filter,
                     clearable=True)
-                .classes("w-38")
+                .classes("flex-1")
             )
             (
                 ui
                 .select([10, 25, 50, 100], value=_page_size, label="History items", on_change=set_page_size)
                 .classes("w-28")
-                .classes("ml-auto")
             )
 
     saved_items = db.select_items(

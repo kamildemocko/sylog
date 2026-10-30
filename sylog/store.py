@@ -173,6 +173,18 @@ class SqliteDB:
 
         return [HistoryItem(*s) for s in selected]
 
+    def select_items_count(self) -> int:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query_all = """
+        SELECT count(id) FROM log_items
+        """
+
+        selected = self.conn.execute(query_all).fetchone()
+
+        return int(selected[0])
+
     def remove_an_item(self, uid: int) -> None:
         if not self.conn:
             raise ConnectionNotOpened

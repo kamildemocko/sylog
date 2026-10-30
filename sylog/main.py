@@ -31,7 +31,16 @@ def header_and_footer():
         yield
 
     ui.separator().classes("my-6")
-    ui.markdown("2026 **SyLog**").classes("w-full text-center")
+
+    log_items_count = DB.select_items_count()
+    with ui.row().classes("w-full justify-center mb-4"):
+        ui.label(">>")
+        ui.link("SyLog", "https://github.com/kamildemocko/sylog", new_tab=True)
+        ui.label("|")
+        ui.label(f"{log_items_count} symptoms logged")
+        ui.label("<<")
+
+        # ui.markdown(f"\>\> **SyLog** &nbsp;| &nbsp;{log_items_count} symptoms logged <<").classes("w-full text-center")
 
 
 @ui.page("/")
