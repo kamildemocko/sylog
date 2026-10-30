@@ -2,7 +2,7 @@ import atexit
 from pathlib import Path
 import sqlite3
 
-from models import QueryItem
+from models import HistoryItem, QueryItem
 
 
 class ConnectionAlreadyOpenedError(Exception): ...
@@ -59,7 +59,6 @@ class SqliteDB:
         	id INTEGER PRIMARY KEY,
         	ts TEXT,
         	symptom TEXT NOT NULL,
-        	symptom_type TEXT NOT NULL,
         	severity TEXT NOT NULL,
         	description TEXT NULL,
         	created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
@@ -129,28 +128,38 @@ class SqliteDB:
             raise ConnectionNotOpened
 
         query = """
-        INSERT INTO log_items (ts, symptom, symptom_type, severity, description) VALUES (?, ?, ?, ?, ?);
+        INSERT INTO log_items (ts, symptom, severity, description) VALUES (?, ?, ?, ?);
         """
 
         self.conn.execute(query, (
             item.timestamp,
             item.symptom,
-            item.symptom_type,
             item.severity,
             item.description,
         ))
         self.conn.commit()
 
-    def select_items(self, count: int = 20) -> list[QueryItem]:
+    def select_items(self, count: int = 20) -> list[HistoryItem]:
         if not self.conn:
             raise ConnectionNotOpened
 
         query = """
-        SELECT ts, symptom, symptom_type, severity, description
+        SELECT id, ts, symptom, severity, description
         FROM log_items
         ORDER BY id DESC
         LIMIT ?;
         """
 
         selected = self.conn.execute(query, (count,)).fetchmany(count)
-        return [QueryItem(*s) for s in selected]
+        return [HistoryItem(*s) for s in selected]
+
+    def remove_an_item(self, uid: int) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        DELETE FROM log_items WHERE id = ?;
+        """
+
+        self.conn.execute(query, (uid,))
+        self.conn.commit()

@@ -16,22 +16,33 @@ def severity_bar(value: int, max_value: int = 3):
 
 
 @ui.refreshable
-def content(db: store.SqliteDB):
+def content(db: store.SqliteDB) -> None:
     def set_page_size(e):
         global _page_size
 
         _page_size = e.value
+        ui.notify(f"Page size set to {_page_size}")
+        content.refresh()
+
+    def remove_item(uid: int) -> None:
+        db.remove_an_item(uid)
+        ui.notify("Item removed")
         content.refresh()
 
     saved_items = db.select_items(_page_size)
 
     ui.markdown("## History").classes("w-full text-center")
 
+    if len(saved_items) == 0:
+        ui.label("There are no logged items yet, add one?").classes("w-full text-center")
+        return
+
     for item in saved_items:
         with ui.row().classes("w-full flex-nowrap items-center"):
             ui.markdown(f"**{item.symptom.title()}**\n\n_{item.human_timestamp()}_").classes("w-32")
             severity_bar(utils.knob_value_from_severity(item.severity))
             ui.markdown(f"{item.description if item.description else 'No context'}").classes("flex-1 min-w-0")
+            ui.button(icon="delete", on_click=lambda uid=item.id: remove_item(uid)).classes("w-8").props("color=red")
 
     with ui.column().classes("w-full"):
         (

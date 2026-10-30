@@ -7,7 +7,15 @@ import arrow
 class QueryItem:
     timestamp: str
     symptom: str
-    symptom_type: str
+    severity: str
+    description: str | None
+
+
+@dataclass
+class HistoryItem:
+    id: int
+    timestamp: str
+    symptom: str
     severity: str
     description: str | None
 

@@ -15,7 +15,6 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
         d, t = utils.get_date_and_time()
         date_input.value = d
         time_input.value = t
-        symptom_input.value = ""
         severity.value = SEVERITIES[1]
         desc.value = ""
 
@@ -28,20 +27,17 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
             ui.notify("Please fill the date and time correctly")
             return
 
-        symptom = (
-            symptom_input.value
-            if current_symptom_inp.value == "C"
-            else symptom_select.value
-        )
+        if not isinstance(symptom_select.value, str) or not symptom_select.value:
+            ui.notify("Please select the symptom")
+            return
 
-        if not isinstance(symptom, str) or not symptom.strip():
-            ui.notify("Please select or fill the symptom")
+        if not isinstance(severity.value, str) or not symptom_select.value:
+            ui.notify("Please select the severity of the symptom")
             return
 
         data = models.QueryItem(
             timestamp=utils.create_timestampt_utc(date_input.value, time_input.value),
-            symptom=symptom,
-            symptom_type="standard" if current_symptom_inp.value == "S" else "custom",
+            symptom=symptom_select.value,
             severity=severity.value,
             description=desc.value if desc.value else None,
         )
@@ -63,7 +59,6 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
         time_input = ui.time_input(value=t).classes("flex-1")
 
     with ui.row().classes("w-full flex-nowrap items-stretch"):
-        symptom_inp_value = "S"
         all_symptoms = db.select_all_symptoms()
         all_symptoms = sorted([s.title() for s in all_symptoms])
 
@@ -71,11 +66,6 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
             .select(all_symptoms, with_input=True, value=all_symptoms[0])
             .classes("flex-1")
         )
-        symptom_input = ui.input(placeholder="Custom symptom").classes("flex-1")
-
-        current_symptom_inp = ui.toggle(SYMPTOMS_INP_VALUES, value=symptom_inp_value)
-        symptom_select.bind_visibility_from(current_symptom_inp, "value", value="S")
-        symptom_input.bind_visibility_from(current_symptom_inp, "value", value="C")
 
     severity = (
         ui
