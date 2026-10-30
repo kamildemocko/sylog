@@ -1,6 +1,7 @@
 from nicegui import ui
 
 import store
+import utils
 
 _page_size: int = 10
 _active_filter: str | None = None
@@ -70,7 +71,10 @@ def content(db: store.SqliteDB) -> None:
 
                 ui.button(
                     icon="delete",
-                    on_click=lambda _, uid=item.id: remove_item(uid),
+                    on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
+                        f"Delete symptom from {ts}",
+                        lambda: remove_item(uid)
+                    ),
                 ).classes("w-8").props("color=red")
 
             with ui.row().classes("w-full items-center"):

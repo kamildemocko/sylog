@@ -1,6 +1,7 @@
 from nicegui import ui
 
 import store
+import utils
 
 
 @ui.refreshable
@@ -20,9 +21,12 @@ def content(db: store.SqliteDB):
         if not value:
             return
 
-        db.remove_a_symptom(value)
-        ui.notify(f"Symbol {value} removed")
-        content.refresh()
+        def removal() -> None:
+            db.remove_a_symptom(value)
+            ui.notify(f"Symbol {value} removed")
+            content.refresh()
+
+        utils.confirm_modal(f"Delete {value}?", removal)
 
     ui.markdown("## Add new symptom").classes("w-full text-center items-stretch")
     with ui.row().classes("w-full"):

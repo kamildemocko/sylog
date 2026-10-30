@@ -35,7 +35,8 @@ def content(db: store.SqliteDB) -> None:
 
         ui.download.file(export_file)
 
+    ui.markdown("## CSV Export").classes("w-full text-center")
 
     with ui.column().classes("w-full"):
-        ui.select([10, 25, 50, 100, "ALL"], value=100, label="Number of exported values").classes("w-full")
+        ui.select([10, 25, 50, 100, 500, 1000, "ALL"], value=100, label="Number of exported values").classes("w-full")
         ui.button("Export CSV", on_click=export_csv).classes("w-full")
