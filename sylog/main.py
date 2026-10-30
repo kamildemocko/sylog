@@ -5,6 +5,7 @@ from nicegui import ui
 import symhistory
 import symlog
 import symmanager
+import symexport
 import store
 
 DB = store.SqliteDB()
@@ -20,9 +21,13 @@ def header_and_footer():
                 on_click=lambda: ui.navigate.to("/"),
             ).classes("w-12")
             ui.button(
+                icon="share",
+                on_click=lambda: ui.navigate.to("/export"),
+            ).classes("ml-auto")
+            ui.button(
                 icon="settings",
                 on_click=lambda: ui.navigate.to("/manage-symptoms"),
-            ).classes("ml-auto")
+            ).classes("")
         yield
 
     ui.separator().classes("my-6")
@@ -43,6 +48,13 @@ def manage_symptoms():
     with header_and_footer():
         with ui.column().classes("w-full max-w-2xl mx-auto"):
             symmanager.content(DB)
+
+
+@ui.page("/export")
+def export():
+    with header_and_footer():
+        with ui.column().classes("w-full max-w-2xl mx-auto"):
+            symexport.content(DB)
 
 
 ui.run(

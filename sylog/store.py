@@ -139,9 +139,12 @@ class SqliteDB:
         ))
         self.conn.commit()
 
-    def select_items(self, count: int = 20) -> list[HistoryItem]:
+    def select_items(self, count: int | None = 20) -> list[HistoryItem]:
         if not self.conn:
             raise ConnectionNotOpened
+
+        if count is None:
+            count = -1
 
         query = """
         SELECT id, ts, symptom, severity, description
