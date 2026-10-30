@@ -3,6 +3,7 @@ from dataclasses import fields, asdict
 from pathlib import Path
 
 import arrow
+from loguru import logger
 from nicegui import ui
 
 import store
@@ -16,9 +17,11 @@ def content(db: store.SqliteDB) -> None:
             ui.notify("No items to export")
             return
 
+
         export_dir = Path("./exports")
         export_dir.mkdir(exist_ok=True)
 
+        logger.info("starting export")
         ui.notify("Exporting CSV")
 
         ts = arrow.now().format("YYYY-MM-DDTHH-mm")
@@ -33,6 +36,7 @@ def content(db: store.SqliteDB) -> None:
             writer.writeheader()
             writer.writerows(asdict(i) for i in all_items)
 
+        logger.info("starting file download")
         ui.download.file(export_file)
 
     ui.markdown("## CSV Export").classes("w-full text-center")

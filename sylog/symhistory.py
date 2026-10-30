@@ -1,3 +1,4 @@
+from loguru import logger
 from nicegui import ui
 
 import store
@@ -12,11 +13,15 @@ def content(db: store.SqliteDB) -> None:
     def set_page_size(e) -> None:
         global _page_size
 
+        logger.info(f"setting history page size to {e.value}")
+
         _page_size = e.value
         ui.notify(f"Page size set to {_page_size}")
         content.refresh()
 
     def remove_item(uid: int) -> None:
+        logger.info(f"removing symptom with id={uid}")
+
         db.remove_an_item(uid)
         ui.notify("Item removed")
         content.refresh()
@@ -25,6 +30,8 @@ def content(db: store.SqliteDB) -> None:
         global _active_filter
 
         _active_filter = e.value if e.value else None
+
+        logger.info(f"setting filter to {_active_filter}")
 
         ui.notify(f"History filter set to {_active_filter}")
         content.refresh()
@@ -57,9 +64,13 @@ def content(db: store.SqliteDB) -> None:
     ui.markdown("## History").classes("w-full text-center")
 
     if len(saved_items) == 0:
+        logger.info("no history items to show")
+
         ui.label("There are no logged items yet, add one?").classes("w-full text-center")
         show_controls()
         return
+
+    logger.info(f"showing {len(saved_items)} history items")
 
     for item in saved_items:
         with ui.column().classes("w-full gap-0"):

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from loguru import logger
 from nicegui import ui
 
 import models
@@ -41,6 +42,8 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
             severity=severity.value,
             description=desc.value if desc.value else None,
         )
+
+        logger.info(f"saving symptom {data.symptom} ({data.severity}) with desc {data.description}")
 
         db.insert_an_item(data)
 

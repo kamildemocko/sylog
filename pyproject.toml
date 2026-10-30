@@ -9,5 +9,6 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "arrow>=1.4.0",
+    "loguru>=0.7.3",
     "nicegui>=3.18.0",
 ]

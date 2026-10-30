@@ -1,6 +1,9 @@
+from pathlib import Path
+import sys
 from typing import Callable
 
 import arrow
+from loguru import logger
 from nicegui import ui
 
 
@@ -51,3 +54,35 @@ def confirm_modal(message: str, callback: Callable) -> None:
                 ui.button("Yes", on_click=lambda: (dialog.close(), callback())).classes("flex-1")
 
     dialog.open()
+
+
+def set_up_logger(log_dir: str):
+    _log_dir = Path(log_dir)
+    _log_dir.mkdir(exist_ok=True, parents=True)
+
+    _log_info = _log_dir.joinpath("info.log").resolve()
+    _log_err = _log_dir.joinpath("error.log").resolve()
+
+    logger.remove()
+    logger.add(
+        sys.stdout,
+        format="{module}:{function} - {message}",
+        level="INFO",
+    )
+    logger.add(
+        _log_info,
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {module}:{function} - {message}",
+        level="INFO",
+        rotation="1 month",
+        retention="12 months",
+        backtrace=False,
+        compression="zip",
+    )
+    logger.add(
+        _log_err,
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {module}:{function} - {message}",
+        level="ERROR",
+        rotation="1 month",
+        retention="12 months",
+        compression="zip",
+    )

@@ -1,3 +1,4 @@
+from loguru import logger
 from nicegui import ui
 
 import store
@@ -13,6 +14,8 @@ def content(db: store.SqliteDB):
         if not value:
             return
 
+        logger.info(f"adding new symbol {value}")
+
         db.insert_a_symptom(value.strip())
         ui.notify(f"Symbol {value} added")
         content.refresh()
@@ -22,6 +25,8 @@ def content(db: store.SqliteDB):
             return
 
         def removal() -> None:
+            logger.warning(f"removing symbol {value}")
+
             db.remove_a_symptom(value)
             ui.notify(f"Symbol {value} removed")
             content.refresh()

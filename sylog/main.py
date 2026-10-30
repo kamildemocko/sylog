@@ -1,15 +1,19 @@
 from contextlib import contextmanager
 
 from nicegui import ui
+from loguru import logger
 
 import symhistory
 import symlog
 import symmanager
 import symexport
 import store
+import utils
 
 DB = store.SqliteDB()
 DB.open_db()
+
+utils.set_up_logger("./log")
 
 
 @contextmanager
@@ -66,7 +70,10 @@ def export():
             symexport.content(DB)
 
 
+logger.info("process start")
+
 ui.run(
     title="Symptom Logger",
     viewport="width=device-width, initial-scale=1,maximum-scale=1",
+    reload=True,
 )
