@@ -71,19 +71,19 @@ class SqliteDB:
         """
 
         default_symptoms = [
-            ("Bloating | abdominal fullness",),
-            ("Visible abdominal swelling",),
-            ("Gas",),
-            ("Abdominal pain",),
-            ("Headache",),
-            ("Anal irritation",),
-            ("Genital irritation",),
-            ("Perineal irritation",),
-            ("Body redness | hives",),
-            ("Itching",),
-            ("Bad breath",),
-            ("Reflux | heartburn",),
-            ("Fatigue | low energy",),
+            ("bloating | abdominal fullness",),
+            ("visible abdominal swelling",),
+            ("gas",),
+            ("abdominal pain",),
+            ("headache",),
+            ("anal irritation",),
+            ("genital irritation",),
+            ("perineal irritation",),
+            ("body redness | hives",),
+            ("itching",),
+            ("bad breath",),
+            ("reflux | heartburn",),
+            ("fatigue | low energy",),
         ]
 
         self.conn.execute(table_symptoms_cr_query)
@@ -110,8 +110,8 @@ class SqliteDB:
         INSERT INTO symptoms (name) VALUES (?);
         """
 
-        self.conn.execute(query, (name,))
-        self.conn.commit
+        self.conn.execute(query, (name.lower(),))
+        self.conn.commit()
 
     def remove_a_symptom(self, name: str) -> None:
         if not self.conn:
@@ -121,8 +121,8 @@ class SqliteDB:
         DELETE FROM symptoms WHERE name = ?;
         """
 
-        self.conn.execute(query, (name,))
-        self.conn.commit
+        self.conn.execute(query, (name.lower(),))
+        self.conn.commit()
 
     def insert_an_item(self, item: QueryItem) -> None:
         if not self.conn:

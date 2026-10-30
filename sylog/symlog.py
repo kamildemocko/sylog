@@ -65,9 +65,10 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
     with ui.row().classes("w-full flex-nowrap items-stretch"):
         symptom_inp_value = "S"
         all_symptoms = db.select_all_symptoms()
+        all_symptoms = sorted([s.title() for s in all_symptoms])
 
         symptom_select = (ui
-            .select(sorted(all_symptoms), with_input=True, value=all_symptoms[0])
+            .select(all_symptoms, with_input=True, value=all_symptoms[0])
             .classes("flex-1")
         )
         symptom_input = ui.input(placeholder="Custom symptom").classes("flex-1")

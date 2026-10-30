@@ -20,7 +20,7 @@ def header_and_footer():
                 on_click=lambda: ui.navigate.to("/"),
             ).classes("w-12")
             ui.button(
-                text="Manage Symptoms",
+                icon="settings",
                 on_click=lambda: ui.navigate.to("/manage-symptoms"),
             ).classes("ml-auto")
         yield
@@ -45,4 +45,7 @@ def manage_symptoms():
             symmanager.content(DB)
 
 
-ui.run(title="Symptom Logger")
+ui.run(
+    title="Symptom Logger",
+    viewport="width=device-width, initial-scale=1,maximum-scale=1",
+)
