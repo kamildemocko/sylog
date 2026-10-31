@@ -28,7 +28,7 @@ The app is served at <http://localhost:8080>.
 docker compose up -d --build
 ```
 
-The app is served at <http://localhost:3435>. Data is stored in `./data`.
+The app is served at <http://localhost:3435>. 
 
 ## Data
 
