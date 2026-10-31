@@ -2,7 +2,11 @@ import atexit
 from pathlib import Path
 import sqlite3
 
+from loguru import logger
+
 from models import HistoryItem, QueryItem
+
+SCHEMA_VERSION = 2
 
 
 class ConnectionAlreadyOpenedError(Exception): ...
@@ -40,7 +44,23 @@ class SqliteDB:
         version = self.conn.execute("PRAGMA user_version").fetchone()[0]
         if version == 0:
             self._create_and_seed()
-            self.conn.execute("PRAGMA user_version = 1")
+            self.conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+        migrations = {
+            1: self._migrate_1_to_2,
+        }
+
+        while version < SCHEMA_VERSION:
+            migrations[version]()
+            version += 1
+            self.conn.execute(f"PRAGMA user_version = {version}")
+
+    def _migrate_1_to_2(self) -> None:
+        if not self.conn:
+            raise RuntimeError("no DB connection")
+
+        logger.info("Migrating DB v1 to v2")
+        self.conn.execute("CREATE INDEX idx_log_items_ts ON log_items(ts);")
 
     def _create_and_seed(self) -> None:
         if not self.conn:
@@ -65,8 +85,12 @@ class SqliteDB:
         );
         """
 
-        table_log_items_index_query = """
+        table_log_items_index_s_query = """
         CREATE INDEX idx_log_items_symptom ON log_items(symptom);
+        """
+
+        table_log_items_index_t_query = """
+        CREATE INDEX idx_log_items_ts ON log_items(ts);
         """
 
         table_symptoms_in_query = """
@@ -93,7 +117,8 @@ class SqliteDB:
         self.conn.executemany(table_symptoms_in_query, default_symptoms)
         self.conn.commit()
         self.conn.execute(table_log_items_query)
-        self.conn.execute(table_log_items_index_query)
+        self.conn.execute(table_log_items_index_s_query)
+        self.conn.execute(table_log_items_index_t_query)
 
     def select_all_symptoms(self) -> list[str]:
         if not self.conn:
@@ -154,7 +179,7 @@ class SqliteDB:
         query_all = """
         SELECT id, ts, symptom, severity, description
         FROM log_items
-        ORDER BY id DESC
+        ORDER BY ts DESC
         LIMIT ?;
         """
 
@@ -162,7 +187,7 @@ class SqliteDB:
         SELECT id, ts, symptom, severity, description
         FROM log_items
         WHERE symptom = ?
-        ORDER BY id DESC
+        ORDER BY ts DESC
         LIMIT ?;
         """
 

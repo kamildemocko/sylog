@@ -10,10 +10,10 @@ import symexport
 import store
 import utils
 
+utils.set_up_logger("./log")
+
 DB = store.SqliteDB()
 DB.open_db()
-
-utils.set_up_logger("./log")
 
 
 @contextmanager
