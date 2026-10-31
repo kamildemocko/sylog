@@ -41,10 +41,10 @@ def header_and_footer():
         ui.label(">>")
         ui.link("SyLog", "https://github.com/kamildemocko/sylog", new_tab=True)
         ui.label("|")
+        ui.label(f"v{utils.version()}")
+        ui.label("|")
         ui.label(f"{log_items_count} symptoms logged")
         ui.label("<<")
-
-        # ui.markdown(f"\>\> **SyLog** &nbsp;| &nbsp;{log_items_count} symptoms logged <<").classes("w-full text-center")
 
 
 @ui.page("/")

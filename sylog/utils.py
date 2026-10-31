@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import tomllib
 from typing import Callable
 
 import arrow
@@ -86,3 +87,7 @@ def set_up_logger(log_dir: str):
         retention="12 months",
         compression="zip",
     )
+
+def version() -> str:
+    with Path("pyproject.toml").open("rb") as file:
+        return tomllib.load(file)["project"]["version"]
