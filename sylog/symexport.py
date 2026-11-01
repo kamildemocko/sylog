@@ -4,7 +4,7 @@ from pathlib import Path
 
 import arrow
 from loguru import logger
-from nicegui import ui
+from nicegui import ui, app
 
 import store
 from models import HistoryItem
@@ -13,7 +13,7 @@ from models import HistoryItem
 def content(db: store.SqliteDB) -> None:
     def export_csv() -> None:
         limit_count = None if limit.value == "ALL" else limit.value
-        all_items = db.select_items(count=limit_count)
+        all_items = db.select_items(app.storage.user["profile_id"], count=limit_count)
         if len(all_items) == 0:
             ui.notify("No items to export")
             return

@@ -1,5 +1,5 @@
 from loguru import logger
-from nicegui import ui
+from nicegui import ui, app
 
 import store
 import utils
@@ -55,10 +55,11 @@ def content(db: store.SqliteDB) -> None:
             )
 
     saved_items = db.select_items(
+        app.storage.user["profile_id"],
         _page_size,
         _active_filter.lower() if _active_filter else None
     )
-    all_symptoms = db.select_all_symptoms()
+    all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
     all_symptoms = sorted([s.title() for s in all_symptoms])
 
     ui.markdown("## History").classes("w-full text-center")

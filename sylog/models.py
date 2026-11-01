@@ -9,6 +9,7 @@ class QueryItem:
     symptom: str
     severity: str
     description: str | None
+    profile_id: int
 
 
 @dataclass
@@ -21,3 +22,8 @@ class HistoryItem:
 
     def human_timestamp(self) -> str:
         return arrow.get(self.timestamp).humanize()
+
+@dataclass
+class Profile:
+    id: int
+    name: str

@@ -1,13 +1,12 @@
 from collections.abc import Callable
 
 from loguru import logger
-from nicegui import ui
+from nicegui import ui, app
 
 import models
 import store
 import utils
 
-SYMPTOMS_INP_VALUES = ["S", "C"]
 SEVERITIES = ["LOW", "MEDIUM", "HIGH"]
 
 
@@ -41,6 +40,7 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
             symptom=symptom_select.value.lower(),
             severity=severity.value,
             description=desc.value if desc.value else None,
+            profile_id=app.storage.user["profile_id"],
         )
 
         logger.info(f"saving symptom {data.symptom} ({data.severity}) with desc {data.description}")
@@ -62,7 +62,7 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
         time_input = ui.time_input(value=t).classes("flex-1")
 
     with ui.row().classes("w-full flex-nowrap items-stretch"):
-        all_symptoms = db.select_all_symptoms()
+        all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
         all_symptoms = sorted([s.title() for s in all_symptoms])
 
         symptom_select = (ui
