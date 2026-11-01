@@ -8,6 +8,8 @@ import utils
 @contextmanager
 def content(db: SqliteDB):
     available_profiles = db.select_profiles()
+    if app.storage.user["profile_id"] not in  {p.id for p in available_profiles}:
+        app.storage.user["profile_id"] = 1
 
     with ui.column().classes("w-full max-w-2xl mx-auto"):
         with ui.row().classes("w-full items-center"):

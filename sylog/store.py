@@ -43,6 +43,7 @@ class SqliteDB:
             raise ConnectionAlreadyOpenedError
 
         self.conn = sqlite3.connect(self.db_path, timeout=10)
+        self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.execute("PRAGMA journal_mode=WAL")
         atexit.register(self._close_db)
 
@@ -87,6 +88,8 @@ class SqliteDB:
 
         logger.info("Migrating DB v2 to v3")
         self.conn.executescript("""
+            BEGIN;
+
             CREATE TABLE profiles (
             	id INTEGER PRIMARY KEY,
             	name TEXT NOT NULL UNIQUE,
@@ -97,22 +100,26 @@ class SqliteDB:
             VALUES ("Default");
 
             ALTER TABLE log_items
-            ADD COLUMN profile_id INTEGER REFERENCES profiles(id);
+            ADD COLUMN profile_id INTEGER REFERENCES profiles(id)
+             ON DELETE CASCADE;
 
             UPDATE log_items
             SET profile_id = 1
             WHERE profile_id IS NULL;
 
-            CREATE INDEX idx_log_items_ts ON log_items(ts);
+            CREATE INDEX idx_log_items_profile_id ON log_items(profile_id);
 
             ALTER TABLE symptoms
-            ADD COLUMN profile_id INTEGER REFERENCES profiles(id);
+            ADD COLUMN profile_id INTEGER REFERENCES profiles(id)
+             ON DELETE CASCADE;
 
             CREATE INDEX idx_symptoms_profile_id ON symptoms(profile_id);
 
             UPDATE symptoms
             SET profile_id = 1
             WHERE profile_id IS NULL;
+
+            COMMIT;
         """)
 
     def _create_and_seed(self) -> None:
@@ -122,7 +129,7 @@ class SqliteDB:
         table_symptoms_cr_query = """
         CREATE TABLE symptoms (
         	id INTEGER PRIMARY KEY,
-            profile_id INTEGER references profiles(id),
+            profile_id INTEGER references profiles(id) ON DELETE CASCADE,
         	name TEXT NOT NULL,
         	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         );
@@ -142,13 +149,13 @@ class SqliteDB:
 
         table_profiles_default_query = """
         INSERT INTO profiles (name)
-        VALUES ("Default");
+        VALUES ('Default');
         """
 
         table_log_items_query = """
         CREATE TABLE log_items (
         	id INTEGER PRIMARY KEY,
-            profile_id INTEGER references profiles(id),
+            profile_id INTEGER references profiles(id) ON DELETE CASCADE,
         	ts TEXT,
         	symptom TEXT NOT NULL,
         	severity TEXT NOT NULL,
@@ -164,12 +171,12 @@ class SqliteDB:
         CREATE INDEX idx_symptoms_profile_id ON symptoms(profile_id);
         """
 
-        self.conn.execute(table_symptoms_cr_query)
-        self.conn.executemany(table_symptoms_in_query, default_symptoms)
-        self.conn.commit()
-
         self.conn.execute(table_profiles_query)
         self.conn.execute(table_profiles_default_query)
+        self.conn.commit()
+
+        self.conn.execute(table_symptoms_cr_query)
+        self.conn.executemany(table_symptoms_in_query, default_symptoms)
         self.conn.commit()
 
         self.conn.execute(table_log_items_query)
@@ -209,6 +216,16 @@ class SqliteDB:
 
         self.conn.execute(query, (name.lower(), profile_id))
         self.conn.commit()
+
+    def count_symptoms(self, profile_id: int) -> int:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        SELECT COUNT(id) FROM symptoms WHERE profile_id = ?;
+        """
+
+        return self.conn.execute(query, (profile_id,)).fetchone()[0]
 
     def insert_an_item(self, item: QueryItem) -> None:
         if not self.conn:
@@ -270,15 +287,17 @@ class SqliteDB:
 
         return int(selected[0])
 
-    def remove_an_item(self, uid: int) -> None:
+    def remove_an_item(self, profile_id: int, uid: int) -> None:
         if not self.conn:
             raise ConnectionNotOpened
 
         query = """
-        DELETE FROM log_items WHERE id = ?;
+        DELETE FROM log_items
+        WHERE id = ?
+         AND profile_id = ?;
         """
 
-        self.conn.execute(query, (uid,))
+        self.conn.execute(query, (uid, profile_id))
         self.conn.commit()
 
     def select_profiles(self) -> list[Profile]:

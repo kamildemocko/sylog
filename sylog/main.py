@@ -24,7 +24,6 @@ DB.open_db()
 
 @contextmanager
 def header_and_footer() -> Generator:
-    # app.storage.user.clear()  # TODO: remove dev
     app.storage.user.setdefault("profile_id", 1)
     with symheadtail.content(DB):
         yield

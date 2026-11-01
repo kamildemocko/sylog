@@ -4,36 +4,32 @@ from nicegui import ui, app
 import store
 import utils
 
-_page_size: int = 10
-_active_filter: str | None = None
-
 
 @ui.refreshable
 def content(db: store.SqliteDB) -> None:
-    def set_page_size(e) -> None:
-        global _page_size
+    app.storage.user.setdefault("page_size", 10)
+    app.storage.user.setdefault("active_filter", None)
 
+    def set_page_size(e) -> None:
         logger.info(f"setting history page size to {e.value}")
 
-        _page_size = e.value
-        ui.notify(f"Page size set to {_page_size}")
+        app.storage.user["page_size"] = e.value
+        ui.notify(f"Page size set to {e.value}")
         content.refresh()
 
     def remove_item(uid: int) -> None:
         logger.info(f"removing symptom with id={uid}")
 
-        db.remove_an_item(uid)
+        db.remove_an_item(app.storage.user["profile_id"], uid)
         ui.notify("Item removed")
         content.refresh()
 
     def set_filter(e) -> None:
-        global _active_filter
+        app.storage.user["active_filter"] = e.value if e.value else None
 
-        _active_filter = e.value if e.value else None
+        logger.info(f"setting filter to {app.storage.user["active_filter"]}")
 
-        logger.info(f"setting filter to {_active_filter}")
-
-        ui.notify(f"History filter set to {_active_filter}")
+        ui.notify(f"History filter set to {app.storage.user["active_filter"]}")
         content.refresh()
 
     def show_controls() -> None:
@@ -42,7 +38,7 @@ def content(db: store.SqliteDB) -> None:
                 ui
                 .select(
                     all_symptoms,
-                    value=_active_filter.title() if _active_filter else None,
+                    value=app.storage.user["active_filter"].title() if app.storage.user["active_filter"] else None,
                     label="Filter symptom",
                     on_change=set_filter,
                     clearable=True)
@@ -50,14 +46,19 @@ def content(db: store.SqliteDB) -> None:
             )
             (
                 ui
-                .select([10, 25, 50, 100], value=_page_size, label="History items", on_change=set_page_size)
+                .select(
+                    [10, 25, 50, 100],
+                    value=app.storage.user["page_size"],
+                    label="History items",
+                    on_change=set_page_size
+                )
                 .classes("w-28")
             )
 
     saved_items = db.select_items(
         app.storage.user["profile_id"],
-        _page_size,
-        _active_filter.lower() if _active_filter else None
+        app.storage.user["page_size"],
+        app.storage.user["active_filter"].lower() if app.storage.user["active_filter"] else None
     )
     all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
     all_symptoms = sorted([s.title() for s in all_symptoms])

@@ -31,6 +31,11 @@ def content(db: store.SqliteDB):
             ui.notify(f"Symbol {value} removed")
             content.refresh()
 
+        symptoms_count = db.count_symptoms(app.storage.user["profile_id"])
+        if symptoms_count <= 1:
+            ui.notify("You cannot delete all symbols, at least one must remain")
+            return
+
         utils.confirm_modal(f"Delete {value}?", removal)
 
     ui.markdown("## Symptoms").classes("w-full text-center items-stretch")

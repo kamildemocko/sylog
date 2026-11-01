@@ -26,7 +26,7 @@ def content(db: store.SqliteDB) -> None:
         ui.notify("Exporting CSV")
 
         ts = arrow.now().format("YYYY-MM-DDTHH-mm")
-        export_file = export_dir.joinpath(f"{ts}_sylog_export.csv")
+        export_file = export_dir.joinpath(f"{ts}_user{app.storage.user['profile_id']}_sylog_export.csv")
 
         with export_file.open("w", encoding="utf-8", newline="") as file:
             writer = csv.DictWriter(
