@@ -11,4 +11,5 @@ dependencies = [
     "arrow>=1.4.0",
     "loguru>=0.7.3",
     "nicegui>=3.18.0",
+    "python-dotenv>=1.2.4",
 ]

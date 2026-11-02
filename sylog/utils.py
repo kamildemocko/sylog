@@ -5,7 +5,7 @@ from typing import Callable
 
 import arrow
 from loguru import logger
-from nicegui import ui
+from nicegui import ui, app
 
 
 def get_date_and_time() -> tuple[str, str]:
@@ -88,6 +88,12 @@ def set_up_logger(log_dir: str):
         compression="zip",
     )
 
+
 def version() -> str:
     with Path("pyproject.toml").open("rb") as file:
         return tomllib.load(file)["project"]["version"]
+
+
+def change_profile(e):
+    app.storage.user["profile_id"] = e.value
+    ui.navigate.to("/")

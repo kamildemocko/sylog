@@ -1,15 +1,22 @@
 from contextlib import contextmanager
+import os
+from typing import Generator
 
-from nicegui import ui
+from dotenv import load_dotenv
+from fastapi import Response
+from nicegui import ui, app
 from loguru import logger
 
 import symhistory
 import symlog
 import symmanager
 import symexport
+import symheadtail
 import store
 import utils
 
+
+load_dotenv()
 utils.set_up_logger("./log")
 
 DB = store.SqliteDB()
@@ -17,34 +24,10 @@ DB.open_db()
 
 
 @contextmanager
-def header_and_footer():
-    with ui.column().classes("w-full max-w-2xl mx-auto"):
-        with ui.row().classes("w-full"):
-            ui.button(
-                icon="home",
-                on_click=lambda: ui.navigate.to("/"),
-            ).classes("w-12")
-            ui.button(
-                icon="share",
-                on_click=lambda: ui.navigate.to("/export"),
-            ).classes("ml-auto")
-            ui.button(
-                icon="settings",
-                on_click=lambda: ui.navigate.to("/manage-symptoms"),
-            ).classes("")
+def header_and_footer() -> Generator:
+    app.storage.user.setdefault("profile_id", 1)
+    with symheadtail.content(DB):
         yield
-
-    ui.separator().classes("my-6")
-
-    log_items_count = DB.select_items_count()
-    with ui.row().classes("w-full justify-center mb-4"):
-        ui.label(">>")
-        ui.link("SyLog", "https://github.com/kamildemocko/sylog", new_tab=True)
-        ui.label("|")
-        ui.label(f"v{utils.version()}")
-        ui.label("|")
-        ui.label(f"{log_items_count} symptoms logged")
-        ui.label("<<")
 
 
 @ui.page("/")
@@ -74,6 +57,22 @@ logger.info("process start")
 
 ui.run(
     title="Symptom Logger",
+    storage_secret=os.getenv("STORAGE_SECRET", None),
     viewport="width=device-width, initial-scale=1,maximum-scale=1",
     reload=True,
 )
+
+@app.get("/health")
+def health():
+    if not DB.is_healthy():
+        return Response(
+            status_code=503,
+            content='{"status": "error", "database": "error"}',
+            media_type="application/json",
+        )
+
+    return Response(
+        status_code=200,
+        content='{"status": "ok", "database": "ok"}',
+        media_type="application/json",
+    )
