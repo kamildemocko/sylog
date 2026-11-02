@@ -58,8 +58,29 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
     with ui.row().classes("w-full flex-nowrap"):
         d, t = utils.get_date_and_time()
 
-        date_input = ui.date_input(value=d).classes("flex-1")
-        time_input = ui.time_input(value=t).classes("flex-1")
+        # date_input = ui.date_input(value=d).classes("flex-1")
+        # time_input = ui.time_input(value=t).classes("flex-1")
+        with ui.input("Date", value=d).classes("flex-1") as date_input:
+            with date_input.add_slot("append"):
+                ui.icon("edit_calendar").classes("cursor-pointer")
+
+        with ui.dialog() as date_dialog:
+            with ui.card():
+                ui.date().bind_value(date_input)
+                ui.button("Done", on_click=date_dialog.close)
+
+        date_input.on("click", date_dialog.open)
+
+        with ui.input("Time", value=t).classes("flex-1") as time_input:
+            with time_input.add_slot("append"):
+                ui.icon("access_time").classes("cursor-pointer")
+
+        with ui.dialog() as time_dialog:
+            with ui.card():
+                ui.time().bind_value(time_input)
+                ui.button("Done", on_click=time_dialog.close)
+
+        time_input.on("click", time_dialog.open)
 
     with ui.row().classes("w-full flex-nowrap items-stretch"):
         all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
@@ -68,7 +89,7 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
         symptom_select = (ui
             .select(all_symptoms, with_input=True, value=all_symptoms[0])
             .classes("flex-1")
-        )
+        ).props("behavior=menu")
 
     severity = (
         ui
