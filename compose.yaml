@@ -6,11 +6,13 @@ services:
       - "3435:8080"
     volumes:
       - "/home/kami/docker/data/sylog:/app/data"
+    environment:
+      TZ: Europe/Bratislava
     healthcheck:
       test: [
-        "CMD", 
-        "python", 
-        "-c", 
+        "CMD",
+        "python",
+        "-c",
         "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
       ]
       interval: 30s
@@ -18,4 +20,3 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-
