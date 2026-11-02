@@ -3,6 +3,7 @@ import os
 from typing import Generator
 
 from dotenv import load_dotenv
+from fastapi import Response
 from nicegui import ui, app
 from loguru import logger
 
@@ -60,3 +61,18 @@ ui.run(
     viewport="width=device-width, initial-scale=1,maximum-scale=1",
     reload=True,
 )
+
+@app.get("/health")
+def health():
+    if not DB.is_healthy():
+        return Response(
+            status_code=503,
+            content='{"status": "error", "database": "error"}',
+            media_type="application/json",
+        )
+
+    return Response(
+        status_code=200,
+        content='{"status": "ok", "database": "ok"}',
+        media_type="application/json",
+    )

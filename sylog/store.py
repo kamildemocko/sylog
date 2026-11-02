@@ -55,6 +55,19 @@ class SqliteDB:
 
         self.conn.close()
 
+    def is_healthy(self) -> bool:
+        if self.conn is None:
+            return False
+
+        try:
+            with sqlite3.connect(self.db_path, timeout=2) as conn:
+                conn.execute("SELECT 1").fetchone()
+
+            return True
+        except sqlite3.Error as er:
+            print(er)
+            return False
+
     def _init_db(self) -> None:
         if not self.conn:
             raise ConnectionNotOpened
