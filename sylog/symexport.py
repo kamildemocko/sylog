@@ -1,6 +1,7 @@
 import csv
 from dataclasses import fields, asdict
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import arrow
 from loguru import logger
@@ -17,7 +18,6 @@ def content(db: store.SqliteDB) -> None:
         if len(all_items) == 0:
             ui.notify("No items to export")
             return
-
 
         export_dir = Path("./exports")
         export_dir.mkdir(exist_ok=True)
@@ -40,8 +40,32 @@ def content(db: store.SqliteDB) -> None:
         logger.info("starting file download")
         ui.download.file(export_file)
 
+    def backup_db() -> None:
+        logger.info("starting db backup")
+
+        with TemporaryDirectory() as tmp:
+            tempfile = Path(tmp).joinpath("dbexport")
+            db.backup_database(tempfile)
+            backup_data = tempfile.read_bytes()
+
+        ui.download.content(
+            backup_data,
+            filename="sylog_backup.db",
+            media_type="application/octet-stream",
+        )
+
+        logger.info("starting DB backup download")
+        ui.notify("starting DB backup download")
+
     ui.markdown("## CSV Export").classes("w-full text-center")
 
     with ui.column().classes("w-full"):
         limit = ui.select([10, 25, 50, 100, 500, 1000, "ALL"], value=100, label="Number of exported values").classes("w-full")
         ui.button("Export CSV", on_click=export_csv).classes("w-full")
+
+    ui.separator()
+
+    ui.markdown("## Database backup").classes("w-full text-center")
+
+    with ui.column().classes("w-full"):
+        ui.button("Backup Database", on_click = backup_db).classes("w-full")

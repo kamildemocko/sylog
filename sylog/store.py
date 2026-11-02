@@ -368,3 +368,10 @@ class SqliteDB:
 
         self.conn.execute(query, (new_name, uid))
         self.conn.commit()
+
+    def backup_database(self, dest_path: Path) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        with sqlite3.connect(dest_path) as dest:
+            self.conn.backup(dest)
