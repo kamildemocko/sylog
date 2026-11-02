@@ -106,6 +106,6 @@ def content(db: store.SqliteDB):
         ).classes("w-full")
         ren_pro_to = ui.input(label="Rename to").classes("w-full")
         ui.button(
-            "Remove profile",
+            "Rename profile",
             on_click=lambda: rename_profile(ren_pro.value, ren_pro_to.value)
         ).classes("w-full")
