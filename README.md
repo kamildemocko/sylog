@@ -11,6 +11,10 @@ A small self-hosted web app for logging symptoms, built with [NiceGUI](https://n
 - Browse and filter history, delete entries
 - Export the log to CSV
 
+## Screenshot
+<img width="719" height="1078" alt="screen" src="https://github.com/user-attachments/assets/8cce1467-cb49-4156-8892-5b077d8691b8" />
+
+
 ## Run
 
 Requires [uv](https://docs.astral.sh/uv/) and Python 3.13+.
