@@ -34,7 +34,7 @@ def header_and_footer() -> Generator:
 def index():
     with header_and_footer():
         with ui.column().classes("w-full max-w-2xl mx-auto"):
-            symlog.content(DB, on_saved=symhistory.content.refresh)
+            symlog.content(DB, on_saved=[symhistory.content.refresh, symheadtail.footer.refresh])
             ui.separator().classes("my-6")
             symhistory.content(DB)
 

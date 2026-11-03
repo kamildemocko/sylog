@@ -10,7 +10,7 @@ import utils
 SEVERITIES = ["LOW", "MEDIUM", "HIGH"]
 
 
-def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
+def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
     def reset_form() -> None:
         d, t = utils.get_date_and_time()
         date_input.value = d
@@ -49,7 +49,7 @@ def content(db: store.SqliteDB, on_saved: Callable[[], None] | None = None):
 
         reset_form()
         if on_saved:
-            on_saved()
+            [cb() for cb in on_saved]
 
         ui.notify("Saved")
 
