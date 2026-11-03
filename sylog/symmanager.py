@@ -109,3 +109,26 @@ def content(db: store.SqliteDB):
             "Rename profile",
             on_click=lambda: rename_profile(ren_pro.value, ren_pro_to.value)
         ).classes("w-full")
+
+    ui.separator().classes("my-6")
+
+    ui.markdown("## Dark Mode").classes("w-full text-center items-stretch")
+
+    def set_light_or_dark(e) -> None:
+        if e.value == "DARK":
+            dark.enable()
+            app.storage.user["dark_mode"] = True
+        else:
+            dark.disable()
+            app.storage.user["dark_mode"] = False
+
+    with ui.row().classes("w-full"):
+        print(app.storage.user["dark_mode"])
+        dark = ui.dark_mode(app.storage.user["dark_mode"])
+
+        (
+            ui
+            .toggle(["LIGHT", "DARK"], value="DARK" if app.storage.user["dark_mode"] else "LIGHT", on_change=set_light_or_dark)
+            .classes("w-full")
+            .props("spread")
+        )

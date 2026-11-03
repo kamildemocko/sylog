@@ -58,8 +58,6 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
     with ui.row().classes("w-full flex-nowrap"):
         d, t = utils.get_date_and_time()
 
-        # date_input = ui.date_input(value=d).classes("flex-1")
-        # time_input = ui.time_input(value=t).classes("flex-1")
         with ui.input("Date", value=d).classes("flex-1") as date_input:
             with date_input.add_slot("append"):
                 ui.icon("edit_calendar").classes("cursor-pointer")

@@ -26,6 +26,8 @@ DB.open_db()
 @contextmanager
 def header_and_footer() -> Generator:
     app.storage.user.setdefault("profile_id", 1)
+    app.storage.user.setdefault("dark_mode", False)
+    ui.dark_mode(app.storage.user["dark_mode"])
     with symheadtail.content(DB):
         yield
 
