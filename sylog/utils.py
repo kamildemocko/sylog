@@ -59,7 +59,7 @@ def confirm_modal(message: str, callback: Callable) -> None:
     dialog.open()
 
 
-def modal_severity_description(cur_severity: str, cur_description: str, callback: Callable) -> None:
+def modal_severity_description(cur_severity: str, cur_description: str | None, callback: Callable) -> None:
     with ui.dialog() as dialog:
         with ui.card():
             ui.markdown("#### Enter new severity").classes("w-full text-center")

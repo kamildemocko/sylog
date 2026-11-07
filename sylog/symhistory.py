@@ -24,7 +24,7 @@ def content(db: store.SqliteDB) -> None:
         ui.notify("Item removed")
         content.refresh()
 
-    def change_item(uid: int, cur_severity: str, cur_description: str) -> None:
+    def change_item(uid: int, cur_severity: str, cur_description: str | None) -> None:
         logger.info(f"changing symptom with id={uid}")
 
         def callback(new_severity: str, new_description: str | None) -> None:
@@ -99,12 +99,13 @@ def content(db: store.SqliteDB) -> None:
                 ui.rating(max=3, icon="circle", value=stars).classes("flex-1 min-w-12")
                 ui.markdown(f"_{item.human_timestamp()}_").classes("ml-auto")
 
-                with ui.dropdown_button(icon="menu", auto_close=True):
-                    ui.item("Edit", on_click=lambda _, uid=item.id, sev=item.severity, des=item.description: change_item(uid, sev, des))
-                    ui.item("Delete", on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
-                        f"Delete symptom from {ts}",
-                        lambda: remove_item(uid)
-                    ))
+                with ui.button(icon="more_vert").classes("w-8"):
+                    with ui.menu():
+                        ui.item("Edit", on_click=lambda _, uid=item.id, sev=item.severity, des=item.description: change_item(uid, sev, des))
+                        ui.item("Delete", on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
+                            f"Delete symptom from {ts}",
+                            lambda: remove_item(uid)
+                        ))
 
             with ui.row().classes("w-full items-center"):
                 ui.markdown(f"Context: {item.description or 'No context'}")
