@@ -313,6 +313,22 @@ class SqliteDB:
         self.conn.execute(query, (uid, profile_id))
         self.conn.commit()
 
+    def change_an_item(
+        self, profile_id: int, uid: int, new_severity: str, new_description: str | None
+    ) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        UPDATE log_items
+        SET severity = ?, description = ?
+        WHERE id = ?
+         AND profile_id = ?;
+        """
+
+        self.conn.execute(query, (new_severity, new_description, uid, profile_id))
+        self.conn.commit()
+
     def select_profiles(self) -> list[Profile]:
         if not self.conn:
             raise ConnectionNotOpened

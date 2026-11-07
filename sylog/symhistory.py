@@ -1,3 +1,5 @@
+from functools import partial
+
 from loguru import logger
 from nicegui import ui, app
 
@@ -23,6 +25,23 @@ def content(db: store.SqliteDB) -> None:
         db.remove_an_item(app.storage.user["profile_id"], uid)
         ui.notify("Item removed")
         content.refresh()
+
+    def change_item(uid: int, cur_severity: str, cur_description: str) -> None:
+        logger.info(f"changing symptom with id={uid}")
+
+        def callback(new_severity: str, new_description: str | None) -> None:
+            new_severity = new_severity.strip()
+            new_description = new_description.strip() if new_description else None
+
+            if not new_severity or (new_severity == cur_severity and new_description == cur_description):
+                ui.notify("No change")
+                return
+
+            db.change_an_item(app.storage.user["profile_id"], uid, new_severity, new_description)
+            ui.notify("Item changed")
+            content.refresh()
+
+        utils.modal_severity_description(cur_severity, cur_description, callback)
 
     def set_filter(e) -> None:
         app.storage.user["active_filter"] = e.value if e.value else None
@@ -82,13 +101,12 @@ def content(db: store.SqliteDB) -> None:
                 ui.rating(max=3, icon="circle", value=stars).classes("flex-1 min-w-12")
                 ui.markdown(f"_{item.human_timestamp()}_").classes("ml-auto")
 
-                ui.button(
-                    icon="delete",
-                    on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
+                with ui.dropdown_button(icon="menu", auto_close=True):
+                    ui.item("Edit", on_click=lambda _, uid=item.id, sev=item.severity, des=item.description: change_item(uid, sev, des))
+                    ui.item("Delete", on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
                         f"Delete symptom from {ts}",
                         lambda: remove_item(uid)
-                    ),
-                ).classes("w-8").props("color=red")
+                    ))
 
             with ui.row().classes("w-full items-center"):
                 ui.markdown(f"Context: {item.description or 'No context'}")

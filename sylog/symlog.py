@@ -7,15 +7,13 @@ import models
 import store
 import utils
 
-SEVERITIES = ["LOW", "MEDIUM", "HIGH"]
-
 
 def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
     def reset_form() -> None:
         d, t = utils.get_date_and_time()
         date_input.value = d
         time_input.value = t
-        severity.value = SEVERITIES[1]
+        severity.value = utils.SEVERITIES[1]
         desc.value = ""
 
     def save():
@@ -91,7 +89,7 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
 
     severity = (
         ui
-        .toggle(SEVERITIES, value=SEVERITIES[1])
+        .toggle(utils.SEVERITIES, value=utils.SEVERITIES[1])
         .classes("w-full")
         .props("spread")
     )
