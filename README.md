@@ -12,7 +12,8 @@ A small self-hosted web app for logging symptoms, built with [NiceGUI](https://n
 - Export the log to CSV
 
 ## Screenshot
-<img width="719" height="1078" alt="screen" src="https://github.com/user-attachments/assets/8cce1467-cb49-4156-8892-5b077d8691b8" />
+<img width="704" height="1076" alt="Screenshot_20261107_231850" src="https://github.com/user-attachments/assets/70a2722d-f60e-4dfd-b464-0978ed004f1f" />
+
 
 
 ## Run
