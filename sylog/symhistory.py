@@ -1,5 +1,3 @@
-from functools import partial
-
 from loguru import logger
 from nicegui import ui, app
 
