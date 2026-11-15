@@ -66,8 +66,6 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
         severity.set_options(severities, value=severities[1])
 
 
-    ui.markdown("## Log Symptom").classes("w-full text-center")
-
     with ui.row().classes("w-full flex-nowrap"):
         d, t = utils.get_date_and_time()
 
