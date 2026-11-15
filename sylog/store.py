@@ -229,7 +229,7 @@ class SqliteDB:
         selected = self.conn.execute(query, (profile_id,)).fetchall()
         return [s[0] for s in selected]
 
-    def select_symptoms_severities(self, profile_id: int, name: str) -> str:
+    def select_symptoms_severities(self, profile_id: int, name: str) -> str | None:
         if not self.conn:
             raise ConnectionNotOpened
 
@@ -240,17 +240,19 @@ class SqliteDB:
         LIMIT 1;
         """
 
-        return self.conn.execute(query, (profile_id, name)).fetchone()[0]
+        severities = self.conn.execute(query, (profile_id, name)).fetchone()
 
-    def insert_a_symptom(self, profile_id: int, name: str) -> None:
+        return severities[0] if severities else None
+
+    def insert_a_symptom(self, profile_id: int, name: str, severities: str) -> None:
         if not self.conn:
             raise ConnectionNotOpened
 
         query = """
-        INSERT INTO symptoms (name, profile_id) VALUES (?, ?);
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?, ?);
         """
 
-        self.conn.execute(query, (name.lower(), profile_id))
+        self.conn.execute(query, (name.lower(), severities, profile_id))
         self.conn.commit()
 
     def remove_a_symptom(self, profile_id: int, name: str) -> None:

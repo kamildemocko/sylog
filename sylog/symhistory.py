@@ -39,8 +39,12 @@ def content(db: store.SqliteDB) -> None:
             ui.notify("Item changed")
             content.refresh()
 
-        severities = db.select_symptoms_severities(app.storage.user["profile_id"] ,symptom).split("|")
-        utils.modal_severity_description(severities, cur_severity, cur_description, callback)
+        severities = db.select_symptoms_severities(app.storage.user["profile_id"] ,symptom)
+        if severities is None:
+            ui.notify("Cannot change item")
+            return
+
+        utils.modal_severity_description(severities.split("|"), cur_severity, cur_description, callback)
 
     def set_filter(e) -> None:
         app.storage.user["active_filter"] = e.value if e.value else None

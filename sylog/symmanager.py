@@ -10,13 +10,25 @@ def content(db: store.SqliteDB):
     all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
     all_symptoms = sorted([s.title() for s in all_symptoms])
 
-    def add_new_symbol(value: str | None) -> None:
+    def add_new_symbol(value: str | None, severities: list[str | None]) -> None:
         if not value:
+            ui.notify("Please name the symptom")
+            return
+
+        severities_nn = [s for s in severities if s]
+        severities_nn = [s.replace("|", "/") for s in severities_nn]
+
+        if len(severities_nn) != 3:
+            ui.notify("Please correct severity values")
             return
 
         logger.info(f"adding new symbol {value}")
 
-        db.insert_a_symptom(app.storage.user["profile_id"], value.strip())
+        db.insert_a_symptom(
+            app.storage.user["profile_id"],
+            value.strip(),
+            "|".join(severities_nn)
+        )
         ui.notify(f"Symbol {value} added")
         content.refresh()
 
@@ -42,7 +54,18 @@ def content(db: store.SqliteDB):
 
     with ui.row().classes("w-full"):
         add_sym = ui.input(placeholder="Add new symptom, e.g. Headache").classes("w-full")
-        ui.button("Add symptom", on_click=lambda: add_new_symbol(add_sym.value)).classes("w-full")
+        with ui.row().classes("w-full flex-nowrap"):
+            sev1 = ui.input(placeholder="Severity 1").classes("flex-1")
+            sev2 = ui.input(placeholder="Severity 2").classes("flex-1")
+            sev3 = ui.input(placeholder="Severity 3").classes("flex-1")
+
+        ui.button(
+            "Add symptom",
+            on_click=lambda: add_new_symbol(
+                add_sym.value,
+                [sev1.value, sev2.value, sev3.value],
+            )
+        ).classes("w-full")
 
     with ui.row().classes("w-full"):
         rem_sym = ui.select(sorted(all_symptoms), label="Remove as symptom", with_input=True).classes("w-full")
@@ -123,7 +146,6 @@ def content(db: store.SqliteDB):
             app.storage.user["dark_mode"] = False
 
     with ui.row().classes("w-full"):
-        print(app.storage.user["dark_mode"])
         dark = ui.dark_mode(app.storage.user["dark_mode"])
 
         (

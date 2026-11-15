@@ -56,6 +56,9 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
             app.storage.user["profile_id"],
             name.lower()
         )
+        if severities_raw is None:
+            return []
+
         return severities_raw.split("|")
 
     def on_symptom_change(e: ValueChangeEventArguments) -> None:
