@@ -24,7 +24,7 @@ def content(db: store.SqliteDB) -> None:
         ui.notify("Item removed")
         content.refresh()
 
-    def change_item(uid: int, cur_severity: str, cur_description: str | None) -> None:
+    def change_item(uid: int, symptom: str, cur_severity: str, cur_description: str | None) -> None:
         logger.info(f"changing symptom with id={uid}")
 
         def callback(new_severity: str, new_description: str | None) -> None:
@@ -39,7 +39,8 @@ def content(db: store.SqliteDB) -> None:
             ui.notify("Item changed")
             content.refresh()
 
-        utils.modal_severity_description(cur_severity, cur_description, callback)
+        severities = db.select_symptoms_severities(app.storage.user["profile_id"] ,symptom).split("|")
+        utils.modal_severity_description(severities, cur_severity, cur_description, callback)
 
     def set_filter(e) -> None:
         app.storage.user["active_filter"] = e.value if e.value else None
@@ -95,13 +96,21 @@ def content(db: store.SqliteDB) -> None:
         with ui.column().classes("w-full gap-0"):
             with ui.row().classes("w-full items-center flex-nowrap"):
                 ui.markdown(f"**{item.symptom.title()}**")
-                stars = 3 if item.severity == "HIGH" else 2 if item.severity == "MEDIUM" else 1
-                ui.rating(max=3, icon="circle", value=stars).classes("flex-1 min-w-12")
+                ui.markdown(f"*» {item.severity}*")
                 ui.markdown(f"_{item.human_timestamp()}_").classes("ml-auto")
 
                 with ui.button(icon="more_vert").classes("w-8"):
                     with ui.menu():
-                        ui.item("Edit", on_click=lambda _, uid=item.id, sev=item.severity, des=item.description: change_item(uid, sev, des))
+                        ui.item(
+                            "Edit",
+                            on_click=(
+                                lambda _,
+                                uid=item.id,
+                                sev=item.severity,
+                                sym=item.symptom,
+                                des=item.description:
+                                    change_item(uid, sym, sev, des))
+                            )
                         ui.item("Delete", on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
                             f"Delete symptom from {ts}",
                             lambda: remove_item(uid)

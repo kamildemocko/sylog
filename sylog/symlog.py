@@ -14,7 +14,6 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
         d, t = utils.get_date_and_time()
         date_input.value = d
         time_input.value = t
-        severity.value = utils.SEVERITIES[1]
         desc.value = ""
 
     def save():
