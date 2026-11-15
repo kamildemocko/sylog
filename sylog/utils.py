@@ -7,8 +7,6 @@ import arrow
 from loguru import logger
 from nicegui import ui, app
 
-SEVERITIES = ["LOW", "MEDIUM", "HIGH"]
-
 
 def get_date_and_time() -> tuple[str, str]:
     date_now = arrow.now().format("YYYY-MM-DD")

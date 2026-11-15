@@ -1,6 +1,7 @@
 import atexit
 from pathlib import Path
 import sqlite3
+from typing import cast
 
 from loguru import logger
 
@@ -227,6 +228,19 @@ class SqliteDB:
 
         selected = self.conn.execute(query, (profile_id,)).fetchall()
         return [s[0] for s in selected]
+
+    def select_symptoms_severities(self, profile_id: int, name: str) -> str:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        SELECT severities FROM symptoms
+        WHERE profile_id = ?
+         AND name = ?
+        LIMIT 1;
+        """
+
+        return self.conn.execute(query, (profile_id, name)).fetchone()[0]
 
     def insert_a_symptom(self, profile_id: int, name: str) -> None:
         if not self.conn:
