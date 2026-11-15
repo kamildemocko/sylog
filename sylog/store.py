@@ -1,12 +1,13 @@
 import atexit
 from pathlib import Path
 import sqlite3
+from typing import cast
 
 from loguru import logger
 
 from models import HistoryItem, Profile, QueryItem
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 class ConnectionAlreadyOpenedError(Exception): ...
@@ -14,19 +15,19 @@ class ConnectionNotOpened(Exception): ...
 
 
 default_symptoms = [
-    ("bloating | abdominal fullness",),
-    ("visible abdominal swelling",),
-    ("gas",),
-    ("abdominal pain",),
-    ("headache",),
-    ("anal irritation",),
-    ("genital irritation",),
-    ("perineal irritation",),
-    ("body redness | hives",),
-    ("itching",),
-    ("bad breath",),
-    ("reflux | heartburn",),
-    ("fatigue | low energy",),
+    ("bloating | abdominal fullness", "LOW|MEDIUM|HIGH"),
+    ("visible abdominal swelling", "LOW|MEDIUM|HIGH"),
+    ("gas", "LOW|MEDIUM|HIGH"),
+    ("abdominal pain", "LOW|MEDIUM|HIGH"),
+    ("headache", "LOW|MEDIUM|HIGH"),
+    ("anal irritation", "LOW|MEDIUM|HIGH"),
+    ("genital irritation", "LOW|MEDIUM|HIGH"),
+    ("perineal irritation", "LOW|MEDIUM|HIGH"),
+    ("body redness | hives", "LOW|MEDIUM|HIGH"),
+    ("itching", "LOW|MEDIUM|HIGH"),
+    ("bad breath", "LOW|MEDIUM|HIGH"),
+    ("reflux | heartburn", "LOW|MEDIUM|HIGH"),
+    ("fatigue | low energy", "LOW|MEDIUM|HIGH"),
 ]
 
 
@@ -81,6 +82,7 @@ class SqliteDB:
         migrations = {
             1: self._migrate_1_to_2,
             2: self._migrate_2_to_3,
+            3: self._migrate_3_to_4,
         }
 
         while version < SCHEMA_VERSION:
@@ -135,6 +137,23 @@ class SqliteDB:
             COMMIT;
         """)
 
+    def _migrate_3_to_4(self) -> None:
+        if not self.conn:
+            raise RuntimeError("no DB connection")
+
+        logger.info("Migrating DB v3 to v4")
+
+        self.conn.executescript("""
+        BEGIN;
+
+        ALTER TABLE symptoms
+        ADD COLUMN severities TEXT NOT NULL DEFAULT 'LOW|MEDIUM|HIGH';
+
+        CREATE INDEX idx_symptoms_name ON symptoms(name);
+
+        COMMIT;
+        """)
+
     def _create_and_seed(self) -> None:
         if not self.conn:
             raise ConnectionNotOpened
@@ -144,12 +163,13 @@ class SqliteDB:
         	id INTEGER PRIMARY KEY,
             profile_id INTEGER references profiles(id) ON DELETE CASCADE,
         	name TEXT NOT NULL,
+            severities TEXT NOT NULL DEFAULT 'LOW|MEDIUM|HIGH',
         	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         );
         """
 
         table_symptoms_in_query = """
-        INSERT INTO symptoms (name, profile_id) VALUES (?, 1);
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?, 1);
         """
 
         table_profiles_query = """
@@ -177,11 +197,12 @@ class SqliteDB:
         );
         """
 
-        table_log_items_indexes_query = """
+        indexes_query = """
         CREATE INDEX idx_log_items_symptom ON log_items(symptom);
         CREATE INDEX idx_log_items_ts ON log_items(ts);
         CREATE INDEX idx_log_items_profile_id ON log_items(profile_id);
         CREATE INDEX idx_symptoms_profile_id ON symptoms(profile_id);
+        CREATE INDEX idx_symptoms_name ON symptoms(name);
         """
 
         self.conn.execute(table_profiles_query)
@@ -193,7 +214,7 @@ class SqliteDB:
         self.conn.commit()
 
         self.conn.execute(table_log_items_query)
-        self.conn.executescript(table_log_items_indexes_query)
+        self.conn.executescript(indexes_query)
 
     def select_all_symptoms(self, profile_id: int) -> list[str]:
         if not self.conn:
@@ -208,15 +229,30 @@ class SqliteDB:
         selected = self.conn.execute(query, (profile_id,)).fetchall()
         return [s[0] for s in selected]
 
-    def insert_a_symptom(self, profile_id: int, name: str) -> None:
+    def select_symptoms_severities(self, profile_id: int, name: str) -> str | None:
         if not self.conn:
             raise ConnectionNotOpened
 
         query = """
-        INSERT INTO symptoms (name, profile_id) VALUES (?, ?);
+        SELECT severities FROM symptoms
+        WHERE profile_id = ?
+         AND name = ?
+        LIMIT 1;
         """
 
-        self.conn.execute(query, (name.lower(), profile_id))
+        severities = self.conn.execute(query, (profile_id, name)).fetchone()
+
+        return severities[0] if severities else None
+
+    def insert_a_symptom(self, profile_id: int, name: str, severities: str) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?, ?);
+        """
+
+        self.conn.execute(query, (name.lower(), severities, profile_id))
         self.conn.commit()
 
     def remove_a_symptom(self, profile_id: int, name: str) -> None:
@@ -349,13 +385,13 @@ class SqliteDB:
         """
 
         insert_default_symptoms_query = """
-        INSERT INTO symptoms (name, profile_id) VALUES (?, ?);
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?);
         """
 
         cursor = self.conn.execute(insert_query, (name, ))
         lastid = cursor.lastrowid
 
-        self.conn.executemany(insert_default_symptoms_query, [(s[0], lastid) for s in default_symptoms])
+        self.conn.executemany(insert_default_symptoms_query, [(s[0], s[1], lastid) for s in default_symptoms])
 
         self.conn.commit()
 

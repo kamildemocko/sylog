@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from loguru import logger
 from nicegui import ui, app
+from nicegui.events import ValueChangeEventArguments
 
 import models
 import store
@@ -13,7 +14,6 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
         d, t = utils.get_date_and_time()
         date_input.value = d
         time_input.value = t
-        severity.value = utils.SEVERITIES[1]
         desc.value = ""
 
     def save():
@@ -51,7 +51,20 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
 
         ui.notify("Saved")
 
-    ui.markdown("## Log Symptom").classes("w-full text-center")
+    def severity_for(name: str) -> list[str]:
+        severities_raw = db.select_symptoms_severities(
+            app.storage.user["profile_id"],
+            name.lower()
+        )
+        if severities_raw is None:
+            return []
+
+        return severities_raw.split("|")
+
+    def on_symptom_change(e: ValueChangeEventArguments) -> None:
+        severities = severity_for(e.value)
+        severity.set_options(severities, value=severities[1])
+
 
     with ui.row().classes("w-full flex-nowrap"):
         d, t = utils.get_date_and_time()
@@ -83,13 +96,18 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
         all_symptoms = sorted([s.title() for s in all_symptoms])
 
         symptom_select = (ui
-            .select(all_symptoms, with_input=True, value=all_symptoms[0])
-            .classes("flex-1")
+            .select(
+                all_symptoms,
+                with_input=True,
+                value=all_symptoms[0],
+                on_change=on_symptom_change
+            ).classes("flex-1")
         ).props("behavior=menu")
 
+    initial_severities = severity_for(all_symptoms[0])
     severity = (
         ui
-        .toggle(utils.SEVERITIES, value=utils.SEVERITIES[1])
+        .toggle(initial_severities, value=initial_severities[1])
         .classes("w-full")
         .props("spread")
     )

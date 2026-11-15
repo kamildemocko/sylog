@@ -7,8 +7,6 @@ import arrow
 from loguru import logger
 from nicegui import ui, app
 
-SEVERITIES = ["LOW", "MEDIUM", "HIGH"]
-
 
 def get_date_and_time() -> tuple[str, str]:
     date_now = arrow.now().format("YYYY-MM-DD")
@@ -59,13 +57,13 @@ def confirm_modal(message: str, callback: Callable) -> None:
     dialog.open()
 
 
-def modal_severity_description(cur_severity: str, cur_description: str | None, callback: Callable) -> None:
+def modal_severity_description(severities: list[str], cur_severity: str, cur_description: str | None, callback: Callable) -> None:
     with ui.dialog() as dialog:
         with ui.card():
             ui.markdown("#### Enter new severity").classes("w-full text-center")
             new_sev = (
                 ui
-                .toggle(SEVERITIES, value=cur_severity)
+                .toggle(severities, value=cur_severity)
                 .classes("w-full")
                 .props("spread")
             )
