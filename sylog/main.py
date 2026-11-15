@@ -7,6 +7,7 @@ from fastapi import Response
 from nicegui import ui, app
 from loguru import logger
 
+import symdaily
 import symhistory
 import symlog
 import symmanager
@@ -36,9 +37,16 @@ def header_and_footer() -> Generator:
 def index():
     with header_and_footer():
         with ui.column().classes("w-full max-w-2xl mx-auto"):
-            symlog.content(DB, on_saved=[symhistory.content.refresh, symheadtail.footer.refresh])
-            ui.separator().classes("my-6")
-            symhistory.content(DB)
+            with ui.tabs().classes("w-full").props("align=justify") as tabs:
+                tab_log = ui.tab("Symptom logger")
+                tab_daily = ui.tab("Dailies")
+            with ui.tab_panels(tabs, value=tab_log).classes("w-full"):
+                with ui.tab_panel(tab_log):
+                    symlog.content(DB, on_saved=[symhistory.content.refresh, symheadtail.footer.refresh])
+                    ui.separator().classes("my-6")
+                    symhistory.content(DB)
+                with ui.tab_panel(tab_daily):
+                    symdaily.content(DB)
 
 
 @ui.page("/manage-symptoms")
