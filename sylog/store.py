@@ -156,6 +156,7 @@ class SqliteDB:
         	id INTEGER PRIMARY KEY,
             profile_id INTEGER references profiles(id) ON DELETE CASCADE,
         	name TEXT NOT NULL,
+            severities TEXT NOT NULL DEFAULT 'LOW|MEDIUM|HIGH',
         	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         );
         """
