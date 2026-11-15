@@ -142,9 +142,15 @@ class SqliteDB:
 
         logger.info("Migrating DB v3 to v4")
 
-        self.conn.execute("""
+        self.conn.executescript("""
+        BEGIN;
+
         ALTER TABLE symptoms
         ADD COLUMN severities TEXT NOT NULL DEFAULT 'LOW|MEDIUM|HIGH';
+
+        CREATE INDEX idx_symptoms_name ON symptoms(name);
+
+        COMMIT;
         """)
 
     def _create_and_seed(self) -> None:
@@ -190,11 +196,12 @@ class SqliteDB:
         );
         """
 
-        table_log_items_indexes_query = """
+        indexes_query = """
         CREATE INDEX idx_log_items_symptom ON log_items(symptom);
         CREATE INDEX idx_log_items_ts ON log_items(ts);
         CREATE INDEX idx_log_items_profile_id ON log_items(profile_id);
         CREATE INDEX idx_symptoms_profile_id ON symptoms(profile_id);
+        CREATE INDEX idx_symptoms_name ON symptoms(name);
         """
 
         self.conn.execute(table_profiles_query)
@@ -206,7 +213,7 @@ class SqliteDB:
         self.conn.commit()
 
         self.conn.execute(table_log_items_query)
-        self.conn.executescript(table_log_items_indexes_query)
+        self.conn.executescript(indexes_query)
 
     def select_all_symptoms(self, profile_id: int) -> list[str]:
         if not self.conn:
