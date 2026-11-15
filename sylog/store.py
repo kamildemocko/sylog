@@ -6,7 +6,7 @@ from loguru import logger
 
 from models import HistoryItem, Profile, QueryItem
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 class ConnectionAlreadyOpenedError(Exception): ...
@@ -14,19 +14,19 @@ class ConnectionNotOpened(Exception): ...
 
 
 default_symptoms = [
-    ("bloating | abdominal fullness",),
-    ("visible abdominal swelling",),
-    ("gas",),
-    ("abdominal pain",),
-    ("headache",),
-    ("anal irritation",),
-    ("genital irritation",),
-    ("perineal irritation",),
-    ("body redness | hives",),
-    ("itching",),
-    ("bad breath",),
-    ("reflux | heartburn",),
-    ("fatigue | low energy",),
+    ("bloating | abdominal fullness", "LOW|MEDIUM|HIGH"),
+    ("visible abdominal swelling", "LOW|MEDIUM|HIGH"),
+    ("gas", "LOW|MEDIUM|HIGH"),
+    ("abdominal pain", "LOW|MEDIUM|HIGH"),
+    ("headache", "LOW|MEDIUM|HIGH"),
+    ("anal irritation", "LOW|MEDIUM|HIGH"),
+    ("genital irritation", "LOW|MEDIUM|HIGH"),
+    ("perineal irritation", "LOW|MEDIUM|HIGH"),
+    ("body redness | hives", "LOW|MEDIUM|HIGH"),
+    ("itching", "LOW|MEDIUM|HIGH"),
+    ("bad breath", "LOW|MEDIUM|HIGH"),
+    ("reflux | heartburn", "LOW|MEDIUM|HIGH"),
+    ("fatigue | low energy", "LOW|MEDIUM|HIGH"),
 ]
 
 
@@ -81,6 +81,7 @@ class SqliteDB:
         migrations = {
             1: self._migrate_1_to_2,
             2: self._migrate_2_to_3,
+            3: self._migrate_3_to_4,
         }
 
         while version < SCHEMA_VERSION:
@@ -135,6 +136,17 @@ class SqliteDB:
             COMMIT;
         """)
 
+    def _migrate_3_to_4(self) -> None:
+        if not self.conn:
+            raise RuntimeError("no DB connection")
+
+        logger.info("Migrating DB v3 to v4")
+
+        self.conn.execute("""
+        ALTER TABLE symptoms
+        ADD COLUMN severities TEXT NOT NULL DEFAULT 'LOW|MEDIUM|HIGH';
+        """)
+
     def _create_and_seed(self) -> None:
         if not self.conn:
             raise ConnectionNotOpened
@@ -149,7 +161,7 @@ class SqliteDB:
         """
 
         table_symptoms_in_query = """
-        INSERT INTO symptoms (name, profile_id) VALUES (?, 1);
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?, 1);
         """
 
         table_profiles_query = """
@@ -349,13 +361,13 @@ class SqliteDB:
         """
 
         insert_default_symptoms_query = """
-        INSERT INTO symptoms (name, profile_id) VALUES (?, ?);
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?);
         """
 
         cursor = self.conn.execute(insert_query, (name, ))
         lastid = cursor.lastrowid
 
-        self.conn.executemany(insert_default_symptoms_query, [(s[0], lastid) for s in default_symptoms])
+        self.conn.executemany(insert_default_symptoms_query, [(s[0], s[1], lastid) for s in default_symptoms])
 
         self.conn.commit()
 
