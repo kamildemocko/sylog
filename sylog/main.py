@@ -8,6 +8,7 @@ from nicegui import ui, app
 from loguru import logger
 
 import symdaily
+import symdailyhistory
 import symhistory
 import symlog
 import symmanager
@@ -39,14 +40,16 @@ def index():
         with ui.column().classes("w-full max-w-2xl mx-auto"):
             with ui.tabs().classes("w-full").props("align=justify") as tabs:
                 tab_log = ui.tab("Symptom logger")
-                tab_daily = ui.tab("Dailies")
-            with ui.tab_panels(tabs, value=tab_log).classes("w-full"):
+                tab_daily = ui.tab("Daily check-in")
+            with ui.tab_panels(tabs, value=tab_daily).classes("w-full"):  # TODO change back
                 with ui.tab_panel(tab_log):
                     symlog.content(DB, on_saved=[symhistory.content.refresh, symheadtail.footer.refresh])
                     ui.separator().classes("my-6")
                     symhistory.content(DB)
                 with ui.tab_panel(tab_daily):
                     symdaily.content(DB)
+                    ui.separator().classes("my-6")
+                    symdailyhistory.content(DB)
 
 
 @ui.page("/manage-symptoms")

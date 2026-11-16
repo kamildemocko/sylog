@@ -7,9 +7,11 @@ A small self-hosted web app for logging symptoms, built with [NiceGUI](https://n
 ## Features
 
 - Log a symptom with date, time, severity and a description
+- Log daily context
 - Pick from a predefined list or add your own symptoms
 - Browse and filter history, delete entries
 - Export the log to CSV
+- Backup database
 
 ## Screenshot
 <img width="704" height="1076" alt="Screenshot_20261107_231850" src="https://github.com/user-attachments/assets/70a2722d-f60e-4dfd-b464-0978ed004f1f" />
