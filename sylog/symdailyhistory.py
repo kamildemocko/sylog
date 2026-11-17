@@ -2,56 +2,26 @@ from loguru import logger
 from nicegui import ui, app
 
 import store
+from models import DailyItem
 import utils
 
 
 @ui.refreshable
 def content(db: store.SqliteDB) -> None:
-    app.storage.user.setdefault("page_size", 10)
-    app.storage.user.setdefault("active_filter", None)
+    app.storage.user.setdefault("page_size_daily", 10)
 
     def set_page_size(e) -> None:
         logger.info(f"setting history page size to {e.value}")
 
-        app.storage.user["page_size"] = e.value
+        app.storage.user["page_size_daily"] = e.value
         ui.notify(f"Page size set to {e.value}")
         content.refresh()
 
-    def remove_item(uid: int) -> None:
-        logger.info(f"removing symptom with id={uid}")
+    def remove_item(ts: str) -> None:
+        logger.info(f"removing symptom with timestamp={ts}")
 
-        db.remove_an_item(app.storage.user["profile_id"], uid)
+        db.remove_a_daily(app.storage.user["profile_id"], ts)
         ui.notify("Item removed")
-        content.refresh()
-
-    def change_item(uid: int, symptom: str, cur_severity: str, cur_description: str | None) -> None:
-        logger.info(f"changing symptom with id={uid}")
-
-        def callback(new_severity: str, new_description: str | None) -> None:
-            new_severity = new_severity.strip()
-            new_description = new_description.strip() if new_description else None
-
-            if not new_severity or (new_severity == cur_severity and new_description == cur_description):
-                ui.notify("No change")
-                return
-
-            db.change_an_item(app.storage.user["profile_id"], uid, new_severity, new_description)
-            ui.notify("Item changed")
-            content.refresh()
-
-        severities = db.select_symptoms_severities(app.storage.user["profile_id"] ,symptom)
-        if severities is None:
-            ui.notify("Cannot change item")
-            return
-
-        utils.modal_severity_description(severities.split("|"), cur_severity, cur_description, callback)
-
-    def set_filter(e) -> None:
-        app.storage.user["active_filter"] = e.value if e.value else None
-
-        logger.info(f"setting filter to {app.storage.user["active_filter"]}")
-
-        ui.notify(f"History filter set to {app.storage.user["active_filter"]}")
         content.refresh()
 
     def show_controls() -> None:
@@ -59,31 +29,20 @@ def content(db: store.SqliteDB) -> None:
             (
                 ui
                 .select(
-                    all_symptoms,
-                    value=app.storage.user["active_filter"].title() if app.storage.user["active_filter"] else None,
-                    label="Filter symptom",
-                    on_change=set_filter,
-                    clearable=True)
-                .classes("flex-1")
-            )
-            (
-                ui
-                .select(
                     [10, 25, 50, 100],
-                    value=app.storage.user["page_size"],
+                    value=app.storage.user["page_size_daily"],
                     label="History items",
                     on_change=set_page_size
                 )
-                .classes("w-28")
+                .classes("w-28 ml-auto")
             )
 
-    saved_items = db.select_items(
+    saved_items = db.select_dailies(
         app.storage.user["profile_id"],
-        app.storage.user["page_size"],
-        app.storage.user["active_filter"].lower() if app.storage.user["active_filter"] else None
+        app.storage.user["page_size_daily"],
     )
-    all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
-    all_symptoms = sorted([s.title() for s in all_symptoms])
+    all_dailysev = db.select_all_dailyseverities(app.storage.user["profile_id"])
+    all_dailysev = sorted([s[1].title() for s in all_dailysev])
 
     if len(saved_items) == 0:
         logger.info("no history items to show")
@@ -92,35 +51,27 @@ def content(db: store.SqliteDB) -> None:
         show_controls()
         return
 
+    saved_items_grouped: dict[str, list[DailyItem]] = {}
+    for si in saved_items:
+        saved_items_grouped.setdefault(si.human_timestamp(), []).append(si)
+
     logger.info(f"showing {len(saved_items)} history items")
 
-    for item in saved_items:
-        with ui.column().classes("w-full gap-0"):
-            with ui.row().classes("w-full items-center flex-nowrap"):
-                ui.markdown(f"**{item.symptom.title()}**")
-                ui.markdown(f"*» {item.severity}*")
-                ui.markdown(f"_{item.human_timestamp()}_").classes("ml-auto")
+    for human_ts, group in saved_items_grouped.items():
+        with ui.row().classes("w-full"):
+            ui.markdown(f"_{human_ts}_").classes("mr-auto")
+            ui.button(icon="delete", on_click=lambda _, ts=group[0].timestamp: utils.confirm_modal(
+                f"Delete symptom from {human_ts}",
+                lambda: remove_item(ts)
+            )).classes("w-8")
 
-                with ui.button(icon="more_vert").classes("w-8"):
-                    with ui.menu():
-                        ui.item(
-                            "Edit",
-                            on_click=(
-                                lambda _,
-                                uid=item.id,
-                                sev=item.severity,
-                                sym=item.symptom,
-                                des=item.description:
-                                    change_item(uid, sym, sev, des))
-                            )
-                        ui.item("Delete", on_click=lambda _, uid=item.id, ts=item.human_timestamp(): utils.confirm_modal(
-                            f"Delete symptom from {ts}",
-                            lambda: remove_item(uid)
-                        ))
+        for item in group:
+            with ui.column().classes("w-full gap-0"):
+                with ui.row().classes("w-full items-center flex-nowrap"):
+                    ui.markdown(f"**{item.name.title()}**")
+                    ui.markdown(f"*» {item.rvalue}*")
+                    ui.markdown(f"Note: {item.note or 'Without note'}").classes("ml-auto")
 
-            with ui.row().classes("w-full items-center"):
-                ui.markdown(f"Context: {item.description or 'No context'}")
-
-            ui.separator()
+        ui.separator()
 
     show_controls()

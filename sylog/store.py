@@ -1,11 +1,10 @@
 import atexit
 from pathlib import Path
 import sqlite3
-from typing import cast
 
 from loguru import logger
 
-from models import HistoryItem, Profile, QueryItem
+from models import DailyItem, HistoryItem, Profile, QueryItem, QueryItemDaily
 
 SCHEMA_VERSION = 4
 
@@ -427,3 +426,122 @@ class SqliteDB:
 
         with sqlite3.connect(dest_path) as dest:
             self.conn.backup(dest)
+
+    def select_dailies(self, profile_id: int, count: int | None = 20) -> list[DailyItem]:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        if count is None:
+            count = -1
+
+        query_all = """
+        SELECT id, ts, name, rvalue, note
+        FROM log_dailies
+        WHERE profile_id = ?
+        ORDER BY ts DESC
+        LIMIT ?;
+        """
+
+        selected = self.conn.execute(query_all, (profile_id, count,)).fetchall()
+
+        return [DailyItem(*s) for s in selected]
+
+    def select_dailies_by_timestamp(self, profile_id: int, timestamp: str) -> list[DailyItem]:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query_all = """
+        SELECT id, ts, name, rvalue, note
+        FROM log_dailies
+        WHERE profile_id = ?
+         AND ts = ?
+        ORDER BY ts DESC;
+        """
+
+        selected = self.conn.execute(query_all, (profile_id, timestamp,)).fetchall()
+
+        return [DailyItem(*s) for s in selected]
+
+    def insert_a_daily(self, item: QueryItemDaily) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        INSERT INTO log_dailies
+        (ts, name, rvalue, note, profile_id)
+        VALUES (?, ?, ?, ?, ?);
+        """
+
+        try:
+            self.conn.execute(query, (
+                item.timestamp,
+                item.name,
+                item.rvalue,
+                item.note,
+                item.profile_id,
+            ))
+
+        except sqlite3.IntegrityError:
+            raise ValueError("date already logged")
+
+        self.conn.commit()
+
+    def remove_a_daily(self, profile_id: int, timestamp: str) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        DELETE FROM log_dailies
+        WHERE ts = ?
+         AND profile_id = ?;
+        """
+
+        self.conn.execute(query, (timestamp, profile_id))
+        self.conn.commit()
+
+    def select_all_dailyseverities(self, profile_id: int) -> list[tuple[str, str]]:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        SELECT id, name, rvalues FROM dailyseverities
+        WHERE profile_id = ?
+        LIMIT 100;
+        """
+
+        selected = self.conn.execute(query, (profile_id,)).fetchall()
+        return selected
+
+    def insert_dailyseverity(self, profile_id: int, name: str, rvalues: str) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        INSERT INTO dailyseverities (name, rvalues, profile_id) VALUES (?, ?, ?);
+        """
+
+        self.conn.execute(query, (name.lower(), rvalues, profile_id))
+        self.conn.commit()
+
+    def remove_dailyseverity(self, profile_id: int, name: str) -> None:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        DELETE FROM dailyseverities
+        WHERE name = ?
+         AND profile_id = ?;
+        """
+
+        self.conn.execute(query, (name, profile_id))
+        self.conn.commit()
+
+    def count_dailyseverities(self, profile_id: int) -> int:
+        if not self.conn:
+            raise ConnectionNotOpened
+
+        query = """
+        SELECT COUNT(id) FROM dailyseverities WHERE profile_id = ?;
+        """
+
+        return self.conn.execute(query, (profile_id,)).fetchone()[0]

@@ -47,7 +47,7 @@ def index():
                     ui.separator().classes("my-6")
                     symhistory.content(DB)
                 with ui.tab_panel(tab_daily):
-                    symdaily.content(DB)
+                    symdaily.content(DB, on_saved=[symdailyhistory.content.refresh, symheadtail.footer.refresh])
                     ui.separator().classes("my-6")
                     symdailyhistory.content(DB)
 
