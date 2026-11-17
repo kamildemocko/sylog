@@ -29,22 +29,28 @@ def content(db: store.SqliteDB, on_saved: list[Callable] | None = None):
             ui.notify("Please fill the date and time")
             return
 
+        if not utils.validate_date_or_time(date_input.value):
+            ui.notify("Please fill the date correctly")
+            return
+
         ts = utils.create_timestampt_wo_time(date_input.value)
         already_in_db = db.select_dailies_by_timestamp(app.storage.user["profile_id"], ts)
         if len(already_in_db):
             ui.notify("This date already saved!")
             return
 
+        items: list[QueryItemDaily] = []
         for title, (el_rvalue, el_note) in inputs.items():
             item = QueryItemDaily(
                 timestamp=ts,
                 name=title,
                 rvalue=el_rvalue.value,
-                note=el_note.value,
+                note=el_note.value if el_note.value else None,
                 profile_id=app.storage.user["profile_id"],
             )
+            items.append(item)
 
-            db.insert_a_daily(item)
+        db.insert_dailies(items)
 
         if on_saved:
             [cb() for cb in on_saved]

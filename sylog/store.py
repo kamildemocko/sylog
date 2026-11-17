@@ -159,7 +159,7 @@ class SqliteDB:
 
         CREATE TABLE dailyseverities (
          id INTEGER PRIMARY KEY,
-         profile_id INTEGER,
+         profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
          name TEXT NOT NULL,
          rvalues TEXT NOT NULL DEFAULT 'None|Mild|Moderate|Severe|Not sure',
          created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP)
@@ -171,17 +171,17 @@ class SqliteDB:
 
         CREATE TABLE log_dailies (
          id INTEGER PRIMARY KEY,
-         profile_id INTEGER,
+         profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
          ts TEXT,
          name TEXT NOT NULL,
          rvalue TEXT NOT NULL,
          note TEXT,
          created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP),
-         UNIQUE (ts, name, rvalue)
+         UNIQUE (profile_id, ts, name)
         );
 
-        CREATE INDEX idx_dailies_name ON dailyseverities(name);
-        CREATE INDEX idx_log_dailies_symptom ON log_dailies(name);
+        CREATE INDEX idx_dailyseverities_name ON dailyseverities(name);
+        CREATE INDEX idx_log_dailies_name ON log_dailies(name);
         CREATE INDEX idx_log_dailies_ts ON log_dailies(ts);
         CREATE INDEX idx_log_dailies_profile_id ON log_dailies(profile_id);
 
@@ -234,7 +234,7 @@ class SqliteDB:
         table_dailyseverities_query = """
         CREATE TABLE dailyseverities (
          id INTEGER PRIMARY KEY,
-         profile_id INTEGER,
+         profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
          name TEXT NOT NULL,
          rvalues TEXT NOT NULL DEFAULT 'None|Mild|Moderate|Severe|Not sure',
          created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP)
@@ -247,6 +247,19 @@ class SqliteDB:
         VALUES (1, 'Mood', 'Bad|So-so|Good|Splendid|Can''t say');
         """
 
+        table_log_dailies_query = """
+        CREATE TABLE log_dailies (
+            id INTEGER PRIMARY KEY,
+            profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+            ts TEXT,
+            name TEXT NOT NULL,
+            rvalue TEXT NOT NULL,
+            note TEXT,
+            created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP),
+            UNIQUE (profile_id, ts, name)
+        );
+        """
+
         indexes_query = """
         CREATE INDEX idx_log_items_symptom ON log_items(symptom);
         CREATE INDEX idx_log_items_ts ON log_items(ts);
@@ -255,23 +268,10 @@ class SqliteDB:
         CREATE INDEX idx_symptoms_profile_id ON symptoms(profile_id);
         CREATE INDEX idx_symptoms_name ON symptoms(name);
 
-        CREATE INDEX idx_dailies_name ON dailyseverities(name);
-        CREATE INDEX idx_log_dailies_symptom ON log_dailies(name);
+        CREATE INDEX idx_dailyseverities_name ON dailyseverities(name);
+        CREATE INDEX idx_log_dailies_name ON log_dailies(name);
         CREATE INDEX idx_log_dailies_ts ON log_dailies(ts);
         CREATE INDEX idx_log_dailies_profile_id ON log_dailies(profile_id);
-        """
-
-        table_log_dailies_query = """
-        CREATE TABLE log_dailies (
-         id INTEGER PRIMARY KEY,
-         profile_id INTEGER,
-         ts TEXT,
-         name TEXT NOT NULL,
-         rvalue TEXT NOT NULL,
-         note TEXT,
-         created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP),
-         UNIQUE (ts, name, rvalue)
-        );
         """
 
         self.conn.execute(table_profiles_query)
@@ -459,7 +459,7 @@ class SqliteDB:
         """
 
         insert_default_symptoms_query = """
-        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?);
+        INSERT INTO symptoms (name, severities, profile_id) VALUES (?, ?, ?);
         """
 
         cursor = self.conn.execute(insert_query, (name, ))
@@ -537,7 +537,7 @@ class SqliteDB:
 
         return [DailyItem(*s) for s in selected]
 
-    def insert_a_daily(self, item: QueryItemDaily) -> None:
+    def insert_dailies(self, items: list[QueryItemDaily]) -> None:
         if not self.conn:
             raise ConnectionNotOpened
 
@@ -547,17 +547,14 @@ class SqliteDB:
         VALUES (?, ?, ?, ?, ?);
         """
 
-        try:
-            self.conn.execute(query, (
+        with self.conn:
+            self.conn.executemany(query, [(
                 item.timestamp,
                 item.name,
                 item.rvalue,
                 item.note,
                 item.profile_id,
-            ))
-
-        except sqlite3.IntegrityError:
-            raise ValueError("date already logged")
+            ) for item in items])
 
         self.conn.commit()
 
@@ -574,7 +571,7 @@ class SqliteDB:
         self.conn.execute(query, (timestamp, profile_id))
         self.conn.commit()
 
-    def select_all_dailyseverities(self, profile_id: int) -> list[tuple[str, str]]:
+    def select_all_dailyseverities(self, profile_id: int) -> list[tuple[str, str, str]]:
         if not self.conn:
             raise ConnectionNotOpened
 
