@@ -14,7 +14,7 @@ A small self-hosted web app for logging symptoms, built with [NiceGUI](https://n
 - Backup database
 
 ## Screenshot
-<img width="704" height="1076" alt="Screenshot_20261107_231850" src="https://github.com/user-attachments/assets/70a2722d-f60e-4dfd-b464-0978ed004f1f" />
+<img width="712" height="1033" alt="image" src="https://github.com/user-attachments/assets/2cc14f41-6b3a-4a92-82e1-8baafcd49cd7" />
 
 
 
