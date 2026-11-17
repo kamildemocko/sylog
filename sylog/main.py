@@ -41,7 +41,7 @@ def index():
             with ui.tabs().classes("w-full").props("align=justify") as tabs:
                 tab_log = ui.tab("Symptom logger")
                 tab_daily = ui.tab("Daily check-in")
-            with ui.tab_panels(tabs, value=tab_daily).classes("w-full"):  # TODO change back
+            with ui.tab_panels(tabs, value=tab_log).classes("w-full"):
                 with ui.tab_panel(tab_log):
                     symlog.content(DB, on_saved=[symhistory.content.refresh, symheadtail.footer.refresh])
                     ui.separator().classes("my-6")

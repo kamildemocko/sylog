@@ -6,7 +6,7 @@ from loguru import logger
 
 from models import DailyItem, HistoryItem, Profile, QueryItem, QueryItemDaily
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class ConnectionAlreadyOpenedError(Exception): ...
@@ -15,16 +15,10 @@ class ConnectionNotOpened(Exception): ...
 
 default_symptoms = [
     ("bloating | abdominal fullness", "LOW|MEDIUM|HIGH"),
-    ("visible abdominal swelling", "LOW|MEDIUM|HIGH"),
     ("gas", "LOW|MEDIUM|HIGH"),
-    ("abdominal pain", "LOW|MEDIUM|HIGH"),
     ("headache", "LOW|MEDIUM|HIGH"),
-    ("anal irritation", "LOW|MEDIUM|HIGH"),
-    ("genital irritation", "LOW|MEDIUM|HIGH"),
-    ("perineal irritation", "LOW|MEDIUM|HIGH"),
     ("body redness | hives", "LOW|MEDIUM|HIGH"),
     ("itching", "LOW|MEDIUM|HIGH"),
-    ("bad breath", "LOW|MEDIUM|HIGH"),
     ("reflux | heartburn", "LOW|MEDIUM|HIGH"),
     ("fatigue | low energy", "LOW|MEDIUM|HIGH"),
 ]
@@ -82,6 +76,7 @@ class SqliteDB:
             1: self._migrate_1_to_2,
             2: self._migrate_2_to_3,
             3: self._migrate_3_to_4,
+            4: self._migrate_4_to_5,
         }
 
         while version < SCHEMA_VERSION:
@@ -153,6 +148,46 @@ class SqliteDB:
         COMMIT;
         """)
 
+    def _migrate_4_to_5(self) -> None:
+        if not self.conn:
+            raise RuntimeError("no DB connection")
+
+        logger.info("Migrating DB v4 to v5")
+
+        self.conn.executescript("""
+        BEGIN;
+
+        CREATE TABLE dailyseverities (
+         id INTEGER PRIMARY KEY,
+         profile_id INTEGER,
+         name TEXT NOT NULL,
+         rvalues TEXT NOT NULL DEFAULT 'None|Mild|Moderate|Severe|Not sure',
+         created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP)
+        );
+
+        INSERT INTO dailyseverities
+        (profile_id, name, rvalues)
+        VALUES (1, 'Mood', 'Bad|So-so|Good|Splendid|Can''t say');
+
+        CREATE TABLE log_dailies (
+         id INTEGER PRIMARY KEY,
+         profile_id INTEGER,
+         ts TEXT,
+         name TEXT NOT NULL,
+         rvalue TEXT NOT NULL,
+         note TEXT,
+         created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP),
+         UNIQUE (ts, name, rvalue)
+        );
+
+        CREATE INDEX idx_dailies_name ON dailyseverities(name);
+        CREATE INDEX idx_log_dailies_symptom ON log_dailies(name);
+        CREATE INDEX idx_log_dailies_ts ON log_dailies(ts);
+        CREATE INDEX idx_log_dailies_profile_id ON log_dailies(profile_id);
+
+        COMMIT;
+        """)
+
     def _create_and_seed(self) -> None:
         if not self.conn:
             raise ConnectionNotOpened
@@ -196,12 +231,47 @@ class SqliteDB:
         );
         """
 
+        table_dailyseverities_query = """
+        CREATE TABLE dailyseverities (
+         id INTEGER PRIMARY KEY,
+         profile_id INTEGER,
+         name TEXT NOT NULL,
+         rvalues TEXT NOT NULL DEFAULT 'None|Mild|Moderate|Severe|Not sure',
+         created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP)
+        );
+        """
+
+        table_dailyseverities_insert_default_query = """
+        INSERT INTO dailyseverities
+        (profile_id, name, rvalues)
+        VALUES (1, 'Mood', 'Bad|So-so|Good|Splendid|Can''t say');
+        """
+
         indexes_query = """
         CREATE INDEX idx_log_items_symptom ON log_items(symptom);
         CREATE INDEX idx_log_items_ts ON log_items(ts);
         CREATE INDEX idx_log_items_profile_id ON log_items(profile_id);
+
         CREATE INDEX idx_symptoms_profile_id ON symptoms(profile_id);
         CREATE INDEX idx_symptoms_name ON symptoms(name);
+
+        CREATE INDEX idx_dailies_name ON dailyseverities(name);
+        CREATE INDEX idx_log_dailies_symptom ON log_dailies(name);
+        CREATE INDEX idx_log_dailies_ts ON log_dailies(ts);
+        CREATE INDEX idx_log_dailies_profile_id ON log_dailies(profile_id);
+        """
+
+        table_log_dailies_query = """
+        CREATE TABLE log_dailies (
+         id INTEGER PRIMARY KEY,
+         profile_id INTEGER,
+         ts TEXT,
+         name TEXT NOT NULL,
+         rvalue TEXT NOT NULL,
+         note TEXT,
+         created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP),
+         UNIQUE (ts, name, rvalue)
+        );
         """
 
         self.conn.execute(table_profiles_query)
@@ -213,6 +283,11 @@ class SqliteDB:
         self.conn.commit()
 
         self.conn.execute(table_log_items_query)
+
+        self.conn.execute(table_dailyseverities_query)
+        self.conn.execute(table_dailyseverities_insert_default_query)
+        self.conn.execute(table_log_dailies_query)
+
         self.conn.executescript(indexes_query)
 
     def select_all_symptoms(self, profile_id: int) -> list[str]:
