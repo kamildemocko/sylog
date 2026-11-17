@@ -85,8 +85,6 @@ def content(db: store.SqliteDB) -> None:
     all_symptoms = db.select_all_symptoms(app.storage.user["profile_id"])
     all_symptoms = sorted([s.title() for s in all_symptoms])
 
-    ui.markdown("## History").classes("w-full text-center")
-
     if len(saved_items) == 0:
         logger.info("no history items to show")
 

@@ -33,6 +33,11 @@ def create_timestampt_utc(date: str, time: str) -> str:
     return utc.isoformat(sep=" ")
 
 
+def create_timestampt_wo_time(date: str) -> str:
+    parsed = arrow.get(f"{date}T00:00").replace(tzinfo="local")
+    return parsed.isoformat(sep=" ")
+
+
 def knob_value_from_severity(severity: str) -> int:
     match severity:
         case "LOW":
